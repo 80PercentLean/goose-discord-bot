@@ -1,0 +1,7 @@
+{
+  "importOrder": ["<THIRD_PARTY_MODULES>", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "semi": false,
+  "plugins": ["@trivago/prettier-plugin-sort-imports"]
+}
