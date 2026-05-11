@@ -1,0 +1,21 @@
+{
+  "name": "workerd-use-factory",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "register": "tsc && node --env-file=.env dist/register.js",
+    "deploy": "wrangler deploy --minify",
+    "log": "wrangler tail",
+    "type-gen": "wrangler types"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "discord-api-types": "^0.38.38",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.65.0"
+  },
+  "dependencies": {
+    "discord-hono": "^0.20.3"
+  }
+}
