@@ -1,4 +1,6 @@
-import * as handlers from './handlers'
-import { factory } from './init'
+import * as handlers from "./handlers";
+import { factory } from "./init";
 
-export default factory.discord().loader(Object.values(handlers))
+export default factory.discord().loader(Object.values(handlers));
+
+console.log("hello world");
