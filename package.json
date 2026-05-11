@@ -11,6 +11,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "discord-interactions": "^4.4.0",
     "hono": "^4.12.18"
   },
   "devDependencies": {
