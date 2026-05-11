@@ -3,4 +3,4 @@ import { factory } from "./init";
 
 export default factory.discord().loader(Object.values(handlers));
 
-console.log("hello world");
+console.log("hello world2");
