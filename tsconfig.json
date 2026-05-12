@@ -1,13 +1,35 @@
 {
   "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig.json to read more about this file */
+    /* Language and Environment */
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "skipLibCheck": true,
     "lib": ["ESNext"],
     "jsx": "react-jsx",
+    /* Modules */
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["./worker-configuration.d.ts", "node"],
     "jsxImportSource": "hono/jsx",
-    "types": ["./worker-configuration.d.ts", "node"]
-  }
+    "resolveJsonModule": true,
+    /* JavaScript Support */
+    "allowJs": true,
+    "checkJs": true,
+    /* Emit */
+    "rootDir": "./src",
+    "outDir": "./dist",
+    /* Interop Constraints */
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    /* Type Checking */
+    "strict": true,
+    /* Completeness */
+    "skipLibCheck": true,
+    /* tsc Compile */
+    //"allowImportingTsExtensions": true,
+    //"rewriteRelativeImportExtensions": true,
+    "verbatimModuleSyntax": true
+  },
+  "exclude": ["test"],
+  "include": ["worker-configuration.d.ts", "src/**/*.ts"]
 }

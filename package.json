@@ -8,15 +8,18 @@
     "format": "npm run format:check",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "register": "tsc && node --env-file=.env dist/register.js"
   },
   "dependencies": {
+    "discord-hono": "^0.21.2",
     "hono": "^4.12.18"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^25.6.2",
+    "discord-api-types": "^0.38.47",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "3.8.3",
