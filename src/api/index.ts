@@ -1,10 +1,13 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 
+import { auth } from './auth'
 import { events } from './events'
 
 // API path will be at /api/v1
 export const api = new Hono().basePath('/v1')
+
+api.use(auth)
 
 api.route('/events', events)
 
