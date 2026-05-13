@@ -10,8 +10,6 @@ export const auth = createMiddleware<{ Bindings: { API_KEY: string } }>(
     const reqHeader = c.req.header('Authorization')
     const validHeader = `Bearer ${c.env.API_KEY}`
 
-    console.log(reqHeader, validHeader)
-
     if (reqHeader !== validHeader) {
       throw new HTTPException(401)
     }
