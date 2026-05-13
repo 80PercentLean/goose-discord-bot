@@ -1,5 +1,5 @@
-import { $guilds$_$scheduledevents, createRest } from "discord-hono"
-import { Hono } from "hono"
+import { $guilds$_$scheduledevents, createRest } from 'discord-hono'
+import { Hono } from 'hono'
 
 export const events = new Hono<{
   Bindings: CloudflareBindings & {
@@ -12,10 +12,10 @@ export const events = new Hono<{
  * List guild scheduled event endpoint.
  * For more info: https://docs.discord.com/developers/resources/guild-scheduled-event
  */
-events.get("/", async (c) => {
+events.get('/', async (c) => {
   const rest = createRest(c.env.DISCORD_TOKEN)
 
-  const events = await rest("GET", $guilds$_$scheduledevents, [
+  const events = await rest('GET', $guilds$_$scheduledevents, [
     c.env.DISCORD_TEST_GUILD_ID,
   ]).then((res) => res.json())
 
@@ -24,7 +24,7 @@ events.get("/", async (c) => {
   return c.json({
     data: events,
     meta: {
-      apiVersion: "v1",
+      apiVersion: 'v1',
       success: true,
     },
   })

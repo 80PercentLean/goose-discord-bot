@@ -1,16 +1,16 @@
-import { Hono } from "hono"
+import { Hono } from 'hono'
 
-import { api } from "./api"
-import * as handlers from "./handlers"
-import { factory } from "./init"
+import { api } from './api'
+import * as handlers from './handlers'
+import { factory } from './init'
 
 const discordApp = factory.discord().loader(Object.values(handlers))
 
 const app = new Hono()
 
-app.route("/api", api)
+app.route('/api', api)
 
-app.mount("/interactions", discordApp.fetch)
+app.mount('/interactions', discordApp.fetch)
 
 export default {
   fetch: app.fetch,
@@ -20,6 +20,6 @@ export default {
     env: CloudflareBindings,
     ctx: ExecutionContext,
   ) {
-    console.log("cron processed")
+    console.log('cron processed')
   },
 }

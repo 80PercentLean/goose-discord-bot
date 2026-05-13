@@ -1,34 +1,34 @@
-import { Command } from "discord-hono"
+import { Command } from 'discord-hono'
 
-import { factory } from "../init"
+import { factory } from '../init'
 
 /**
  * honk Discord bot command for checking if the bot is responsive.
  */
 export const command_honk = factory.command(
-  new Command("honk", "Check on Goose Bot."),
+  new Command('honk', 'Check on Goose Bot.'),
   (c) => {
     const responsesNormal = [
-      "honk",
-      "HONK",
-      "HOOONK",
-      "honk honk",
-      "HONK HONK HONK",
+      'honk',
+      'HONK',
+      'HOOONK',
+      'honk honk',
+      'HONK HONK HONK',
     ]
 
     const responsesAngry = [
-      "🪿 HISSSSS",
-      "🪿 Aggressive honking intensifies.",
-      "🪿 The goose lowers its head menacingly.",
-      "🪿 *flaps wings aggressively*",
-      "🔪 HONK",
+      '🪿 HISSSSS',
+      '🪿 Aggressive honking intensifies.',
+      '🪿 The goose lowers its head menacingly.',
+      '🪿 *flaps wings aggressively*',
+      '🔪 HONK',
     ]
 
     const responsesRare = [
-      "⚠️ The goose has breached containment.",
-      "🪿 The goose steals your sandwich and leaves.",
-      "💩 Canadian air support inbound.",
-      "🫪 quack",
+      '⚠️ The goose has breached containment.',
+      '🪿 The goose steals your sandwich and leaves.',
+      '💩 Canadian air support inbound.',
+      '🫪 quack',
     ]
 
     const chooseRandom = <T>(items: T[]): T => {

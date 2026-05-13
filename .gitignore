@@ -35,3 +35,6 @@ lerna-debug.log*
 .dev.vars*
 !.dev.vars.example
 !.env.example
+
+# generated html from index.ejs template
+public/index.html
