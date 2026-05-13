@@ -1,5 +1,8 @@
 {
   "name": "goose-discord-bot",
+  "private": true,
+  "version": "0.0.1",
+  "author": "80PercentLean",
   "type": "module",
   "scripts": {
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
@@ -9,6 +12,7 @@
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "lint": "eslint .",
+    "rad": "npm run register && npm run deploy",
     "register": "tsc && node --env-file=.env dist/register.js"
   },
   "dependencies": {

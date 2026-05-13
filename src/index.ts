@@ -1,4 +1,25 @@
+import { Hono } from "hono"
+
+import { api } from "./api"
 import * as handlers from "./handlers"
 import { factory } from "./init"
 
-export default factory.discord().loader(Object.values(handlers))
+const discordApp = factory.discord().loader(Object.values(handlers))
+
+const app = new Hono()
+
+app.route("/api", api)
+
+app.mount("/interactions", discordApp.fetch)
+
+export default {
+  fetch: app.fetch,
+
+  async scheduled(
+    controller: ScheduledController,
+    env: CloudflareBindings,
+    ctx: ExecutionContext,
+  ) {
+    console.log("cron processed")
+  },
+}

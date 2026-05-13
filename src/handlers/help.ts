@@ -3,6 +3,9 @@ import { Button, Command, Components } from "discord-hono"
 import { factory } from "../init"
 import { component_delete } from "./utils"
 
+/**
+ * help Discord bot command
+ */
 export const command_help = factory.command(
   new Command("help", "response help"),
   (c) =>

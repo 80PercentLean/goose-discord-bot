@@ -5,6 +5,7 @@ const commands = [
     new Option("name", "Your name"),
   ),
   new Command("help", "Docs URL"),
+  new Command("honk", "Check on Goose Bot."),
 ]
 
 register(
