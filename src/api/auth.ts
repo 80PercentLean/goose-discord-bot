@@ -7,11 +7,17 @@ import { HTTPException } from 'hono/http-exception'
  */
 export const auth = createMiddleware<{ Bindings: { API_KEY: string } }>(
   async (c, next) => {
-    const reqHeader = c.req.header('Authorization')
-    const validHeader = `Bearer ${c.env.API_KEY}`
+    if (c.env.API_KEY) {
+      const reqHeader = c.req.header('Authorization')
+      const validHeader = `Bearer ${c.env.API_KEY}`
 
-    if (reqHeader !== validHeader) {
-      throw new HTTPException(401)
+      if (reqHeader !== validHeader) {
+        throw new HTTPException(401, { message: 'Unauthorized' })
+      }
+    } else {
+      console.warn(
+        'API_KEY was not set, so authorization middleware was not enabled. The API is currently not secured!',
+      )
     }
 
     await next()
