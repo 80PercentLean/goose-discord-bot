@@ -14,17 +14,30 @@ npm install
 
 ### 2. Setup environment variables.
 
-Rename [`.env.example`](./env.example) to `.env`.
+Rename [`.env.example`](./env.example) to `.env` and set the following environment variables:
+
+- DISCORD_APPLICATION_ID
+- DISCORD_PUBLIC_KEY
+- DISCORD_TOKEN
+
+Optionally, set `DISCORD_TEST_GUILD_ID` to register commands to a specific Discord server. Without this, commands will be registered globally which can take some time to reflect your changes, so if you want to register commands immediately, set this to a Discord server you are testing on.
+
+You can also optionally set `API_KEY` to secure the API.
 
 ### 3. Setup Cloudflare Worker secrets.
 
 Set your [Cloudflare Worker's secrets](https://developers.cloudflare.com/workers/configuration/secrets/):
 
 ```shell
-npx wrangler secret put API_KEY
 npx wrangler secret put DISCORD_APPLICATION_ID
 npx wrangler secret put DISCORD_PUBLIC_KEY
 npx wrangler secret put DISCORD_TOKEN
+```
+
+Optionally, if you want to secure the API, set `API_KEY`:
+
+```shell
+npx wrangler secret put API_KEY
 ```
 
 ### 4. Register and deploy.
