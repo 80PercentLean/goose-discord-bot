@@ -36,27 +36,35 @@ events.get('/', async (c) => {
   const filter = c.req.query('filter')
   if (filter === 'wg') {
     data = eventsJson.filter(({ entity_metadata }) => {
-      if (
-        entity_metadata?.location &&
-        (entity_metadata.location.includes('Central Park') ||
-          entity_metadata.location.includes('Pavilion') ||
-          entity_metadata.location.includes('Santa Clara'))
-      ) {
-        return true
+      if (entity_metadata?.location) {
+        const location = entity_metadata?.location?.toLowerCase()
+
+        if (
+          location &&
+          (location.includes('central park') ||
+            location.includes('pavilion') ||
+            location.includes('santa clara'))
+        ) {
+          return true
+        }
       }
       return false
     })
   } else if (filter === 'cup-pogo') {
     data = eventsJson.filter(({ entity_metadata }) => {
-      if (
-        entity_metadata?.location &&
-        (entity_metadata.location.includes('Cupertino') ||
-          entity_metadata.location.includes('De Anza College') ||
-          entity_metadata.location.includes('Hinson') ||
-          entity_metadata.location.includes('Memorial Park') ||
-          entity_metadata.location.includes('Quinlan'))
-      ) {
-        return true
+      if (entity_metadata?.location) {
+        const location = entity_metadata?.location?.toLowerCase()
+
+        if (
+          location &&
+          (location.includes('cupertino') ||
+            location.includes('de anza college') ||
+            location.includes('hinson') ||
+            location.includes('memorial park') ||
+            location.includes('quinlan'))
+        ) {
+          return true
+        }
       }
       return false
     })
