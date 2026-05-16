@@ -10,7 +10,7 @@ export const events = new Hono<{
 }>()
 
 /**
- * List guild scheduled event endpoint.
+ * List guild scheduled events endpoint.
  * For more info: https://docs.discord.com/developers/resources/guild-scheduled-event
  */
 events.get('/', async (c) => {
@@ -32,10 +32,42 @@ events.get('/', async (c) => {
     })
   }
 
+  let data
+  const filter = c.req.query('filter')
+  if (filter === 'wg') {
+    data = eventsJson.filter(({ entity_metadata }) => {
+      if (
+        entity_metadata?.location &&
+        (entity_metadata.location.includes('Central Park') ||
+          entity_metadata.location.includes('Pavilion') ||
+          entity_metadata.location.includes('Santa Clara'))
+      ) {
+        return true
+      }
+      return false
+    })
+  } else if (filter === 'cup-pogo') {
+    data = eventsJson.filter(({ entity_metadata }) => {
+      if (
+        entity_metadata?.location &&
+        (entity_metadata.location.includes('Cupertino') ||
+          entity_metadata.location.includes('De Anza College') ||
+          entity_metadata.location.includes('Hinson') ||
+          entity_metadata.location.includes('Memorial Park') ||
+          entity_metadata.location.includes('Quinlan'))
+      ) {
+        return true
+      }
+      return false
+    })
+  } else {
+    data = eventsJson
+  }
+
   // TODO: remove unnecessary data from events
 
   return c.json({
-    data: eventsJson,
+    data,
     meta: {
       apiVersion: 'v1',
       success: true,

@@ -32,6 +32,7 @@ Set your [Cloudflare Worker's secrets](https://developers.cloudflare.com/workers
 npx wrangler secret put DISCORD_APPLICATION_ID
 npx wrangler secret put DISCORD_PUBLIC_KEY
 npx wrangler secret put DISCORD_TOKEN
+npx wrangler secret put DISCORD_TEST_GUILD_ID
 ```
 
 Optionally, if you want to secure the API, set `API_KEY`:
