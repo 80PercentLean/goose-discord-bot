@@ -33,7 +33,9 @@
    * Note: Use secrets to store sensitive data.
    * https://developers.cloudflare.com/workers/configuration/secrets/
    */
-  // "vars": {  "MY_VARIABLE": "production_value" }
+  "vars": {
+    "CORS_ORIGIN": "http://localhost:5173,https://80percentlean.github.io,https://staging.cupertino-pogo-map.pages.dev,https://staging.wild-goose-map.pages.dev",
+  },
   /**
    * Service Bindings (communicate between multiple Workers)
    * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings

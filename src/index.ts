@@ -7,9 +7,23 @@ import { factory } from './init'
 
 const discordApp = factory.discord().loader(Object.values(handlers))
 
-const app = new Hono()
+const app = new Hono<{
+  Bindings: CloudflareBindings & { CORS_ORIGIN: string }
+}>()
 
-app.use('/api/*', cors({ origin: '*' }))
+app.use('/api/*', async (c, next) => {
+  let options
+
+  console.log(c.env.CORS_ORIGIN, typeof c.env.CORS_ORIGIN)
+  if (c.env.CORS_ORIGIN) {
+    const origin = c.env.CORS_ORIGIN.split(',')
+    console.log(origin, typeof origin)
+    options = { origin }
+  }
+
+  const customCorsMiddleware = cors(options)
+  return customCorsMiddleware(c, next)
+})
 
 app.route('/api', api)
 
