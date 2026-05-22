@@ -14,10 +14,8 @@ const app = new Hono<{
 app.use('/api/*', async (c, next) => {
   let options
 
-  console.log(c.env.CORS_ORIGIN, typeof c.env.CORS_ORIGIN)
   if (c.env.CORS_ORIGIN) {
     const origin = c.env.CORS_ORIGIN.split(',')
-    console.log(origin, typeof origin)
     options = { origin }
   }
 

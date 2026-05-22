@@ -36,6 +36,13 @@
   "vars": {
     "CORS_ORIGIN": "http://localhost:5173,https://80percentlean.github.io,https://staging.cupertino-pogo-map.pages.dev,https://staging.wild-goose-map.pages.dev",
   },
+  "kv_namespaces": [
+    {
+      "binding": "DISCORD_API_RES",
+      "id": "780d9d83b91d4819a6ef9e79ae8d7680",
+      "remote": true,
+    },
+  ],
   /**
    * Service Bindings (communicate between multiple Workers)
    * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
