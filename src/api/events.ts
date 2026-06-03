@@ -28,7 +28,9 @@ events.get('/', async (c) => {
   }
 
   if (!data) {
-    console.log('Cache miss. Fetching fresh data from Discord API...')
+    console.log(
+      `Cache miss for ${filter || 'all'}. Fetching fresh data from Discord API...`,
+    )
 
     const rest = createRest(c.env.DISCORD_TOKEN)
 
@@ -38,9 +40,13 @@ events.get('/', async (c) => {
 
     const dataAll = await eventsRes.json()
 
-    if (eventsRes.ok) {
-      console.log('Cache hit!')
-    } else {
+    dataAll.sort(
+      (a, b) =>
+        new Date(a.scheduled_start_time).getTime() -
+        new Date(b.scheduled_start_time).getTime(),
+    )
+
+    if (!eventsRes.ok) {
       throw new HTTPException(502, {
         message: 'Encountered a Discord API error',
         cause: {
@@ -84,7 +90,7 @@ events.get('/', async (c) => {
       }
     }
 
-    // Store Discord API response for 5 minutes
+    // Cache Discord API response for 5 minutes
     await c.env.DISCORD_API_RES.put('wg', JSON.stringify(dataWg), {
       expirationTtl: 300,
     })
@@ -95,6 +101,14 @@ events.get('/', async (c) => {
       expirationTtl: 300,
     })
 
+    console.log(
+      `Cached Discord API response at ${new Date().toLocaleString([], {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'America/Los_Angeles',
+      })}.`,
+    )
+
     if (filter === 'wg') {
       data = dataWg
     } else if (filter === 'cup-pogo') {
@@ -102,6 +116,8 @@ events.get('/', async (c) => {
     } else {
       data = dataAll
     }
+  } else {
+    console.log(`Cache hit for ${filter || 'all'}!`)
   }
 
   // TODO: remove unnecessary data from events
