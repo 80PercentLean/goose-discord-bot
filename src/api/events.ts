@@ -40,12 +40,6 @@ events.get('/', async (c) => {
 
     const dataAll = await eventsRes.json()
 
-    dataAll.sort(
-      (a, b) =>
-        new Date(a.scheduled_start_time).getTime() -
-        new Date(b.scheduled_start_time).getTime(),
-    )
-
     if (!eventsRes.ok) {
       throw new HTTPException(502, {
         message: 'Encountered a Discord API error',
@@ -56,6 +50,23 @@ events.get('/', async (c) => {
         },
       })
     }
+
+    if (!Array.isArray(dataAll)) {
+      throw new HTTPException(502, {
+        message: 'Unexpected Discord API response',
+        cause: {
+          status: eventsRes.status,
+          statusText: eventsRes.statusText,
+          data: dataAll,
+        },
+      })
+    }
+
+    dataAll.sort(
+      (a, b) =>
+        new Date(a.scheduled_start_time).getTime() -
+        new Date(b.scheduled_start_time).getTime(),
+    )
 
     const dataWg = []
     const dataCupPogo = []
