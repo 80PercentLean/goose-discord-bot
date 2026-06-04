@@ -23,8 +23,12 @@ events.get('/', async (c) => {
     data = await c.env.DISCORD_API_RES.get('wg', { type: 'json' })
   } else if (filter === 'cup-pogo') {
     data = await c.env.DISCORD_API_RES.get('cup-pogo', { type: 'json' })
-  } else {
+  } else if (!filter) {
     data = await c.env.DISCORD_API_RES.get('all', { type: 'json' })
+  } else {
+    throw new HTTPException(400, {
+      message: 'Unsupported filter value',
+    })
   }
 
   if (!data) {
