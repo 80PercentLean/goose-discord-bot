@@ -79,21 +79,25 @@ events.get('/', async (c) => {
       if (d.entity_metadata?.location) {
         const location = d.entity_metadata?.location?.toLowerCase()
 
+        const includesGoFest = d.name.toLowerCase().includes('go fest')
+
         if (
-          location &&
-          (location.includes('central park') ||
-            location.includes('pavilion') ||
-            location.includes('santa clara'))
+          includesGoFest ||
+          (location &&
+            (location.includes('central park') ||
+              location.includes('pavilion') ||
+              location.includes('santa clara')))
         ) {
           // Location matches Central Park/Santa Clara
           dataWg.push(d)
         } else if (
-          location &&
-          (location.includes('cupertino') ||
-            location.includes('de anza college') ||
-            location.includes('hinson') ||
-            location.includes('memorial park') ||
-            location.includes('quinlan'))
+          includesGoFest ||
+          (location &&
+            (location.includes('cupertino') ||
+              location.includes('de anza college') ||
+              location.includes('hinson') ||
+              location.includes('memorial park') ||
+              location.includes('quinlan')))
         ) {
           // Location matches Memorial Park/De Anza College
           dataCupPogo.push(d)
