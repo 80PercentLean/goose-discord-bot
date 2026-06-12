@@ -34,7 +34,7 @@
    * https://developers.cloudflare.com/workers/configuration/secrets/
    */
   "vars": {
-    "CORS_ORIGIN": "http://localhost:5173,https://80percentlean.github.io,https://staging.cupertino-pogo-map.pages.dev,https://staging.wild-goose-map.pages.dev",
+    "CORS_ORIGIN": "http://localhost:5173,https://80percentlean.github.io,https://staging.cupertino-pogo-map.pages.dev,https://staging.wild-goose-map.pages.dev,https://cupertinopogo.com,https://www.cupertinopogo.com,http://cupertinopogo.com,http://www.cupertinopogo.com,https://wildgoosepogo.com,https://www.wildgoosepogo.com,http://wildgoosepogo.com,http://www.wildgoosepogo.com",
   },
   "kv_namespaces": [
     {
