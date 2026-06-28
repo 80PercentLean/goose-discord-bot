@@ -79,7 +79,10 @@ events.get('/', async (c) => {
       if (d.entity_metadata?.location) {
         const location = d.entity_metadata?.location?.toLowerCase()
 
-        if (d.name.toLowerCase().includes('go fest')) {
+        if (
+          d.name.toLowerCase().includes('go fest 2026 saturday') ||
+          d.name.toLowerCase().includes('go fest 2026 sunday')
+        ) {
           dataWg.push(d)
           dataCupPogo.push(d)
         } else if (
