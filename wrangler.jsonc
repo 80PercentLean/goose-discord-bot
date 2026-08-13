@@ -52,7 +52,7 @@
    * Cron Triggers
    * https://developers.cloudflare.com/workers/configuration/cron-triggers/
    */
-  // "triggers": {
-  //   "crons": ["* * * * *"],
-  // },
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
 }

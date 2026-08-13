@@ -6,6 +6,24 @@ const commands = [
   ),
   new Command('help', 'Docs URL'),
   new Command('honk', 'Check on Goose Bot.'),
+  new Command(
+    'schedule',
+    'Schedule a message to be sent in the future.',
+  ).options(
+    new Option(
+      'destination_channel',
+      'Channel or thread to send the message in',
+      'Channel',
+    )
+      .channel_types()
+      .required(),
+    new Option('content', 'Message content').required(),
+    new Option(
+      'send_time',
+      'When to send the message in Pacific Time',
+    ).required(),
+    new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+  ),
 ]
 
 register(

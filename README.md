@@ -55,6 +55,8 @@ npm run deploy
 - [Discord Hono](https://discord-hono.luis.fun): Library for building Discord bots on Cloudflare Workers
 - [Hono](https://hono.dev): Web application framework that supports Cloudflare Workers
 - [EJS](https://ejs.co): Templating language used to generate HTML
+- [ESLint](https://eslint.org): Code linter
+- [Prettier](https://prettier.io): Code formatter
 
 ## Other
 
