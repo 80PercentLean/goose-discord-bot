@@ -54,7 +54,9 @@ npm run deploy
 - [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript): Language used for some scripts & configuration files
 - [Discord Hono](https://discord-hono.luis.fun): Library for building Discord bots on Cloudflare Workers
 - [Hono](https://hono.dev): Web application framework that supports Cloudflare Workers
+- [Luxon](https://moment.github.io/luxon): Library for dealing with dates and times
 - [EJS](https://ejs.co): Templating language used to generate HTML
+- [Vitest](https://vitest.dev): Framework for unit testing
 - [ESLint](https://eslint.org): Code linter
 - [Prettier](https://prettier.io): Code formatter
 

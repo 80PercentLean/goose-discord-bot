@@ -55,4 +55,11 @@
   "triggers": {
     "crons": ["* * * * *"],
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "goose-discord-bot-d1",
+      "database_id": "48339382-104e-4434-b1c9-b03cce95edf7",
+    },
+  ],
 }

@@ -1,12 +1,8 @@
-import { Command, Embed, Option } from 'discord-hono'
+import { Command, Option } from 'discord-hono'
 
 import { factory } from '../init'
 import { isAdmin, isTeamMember } from '../util'
-
-interface CommandScheduleRes {
-  content: string
-  embeds?: Embed[]
-}
+import { formatLineBreaks, parseSendTime } from './helper'
 
 /**
  * schedule Discord bot command
@@ -31,7 +27,9 @@ export const command_schedule = factory.command(
     new Option('image_attachment', 'Optional image attachment', 'Attachment'),
   ),
   async (c) => {
-    console.log('Command received')
+    const userId = c.interaction?.member?.user?.id
+
+    console.log(`Command received: ${userId}`)
     console.log(c.var)
 
     if (
@@ -41,23 +39,65 @@ export const command_schedule = factory.command(
       return c.res('Goose Bot denies you.')
     }
 
-    let content = `${c.var.destination_channel} ${c.var.content} ${c.var.send_time}`
-    if (c.var.image_attachment) {
-      console.log('Image attachment received')
-      content += ` ${c.var.image_attachment}`
+    const db = c.env.DB
 
-      const attachment = c.ref.attachments?.[c.var.image_attachment]
+    const {
+      destination_channel: destinationChannel,
+      content,
+      send_time: sendTime,
+      image_attachment: imageAttachment,
+    } = c.var
+
+    // Validate the send time input
+    const sendDateTime = parseSendTime(sendTime)
+
+    if (!sendDateTime) {
+      return c
+        .flags('EPHEMERAL')
+        .res('❌ ERROR: Invalid send time. Use a format like `8/13 7:00pm`.')
+    }
+
+    const contentFormatted = formatLineBreaks(content)
+
+    const imageUrl = imageAttachment
+      ? c.ref.attachments?.[imageAttachment]?.url
+      : undefined
+
+    await db
+      .prepare(
+        `
+      INSERT INTO scheduled_messages (
+        channel_id,
+        created_by,
+        content,
+        image_url,
+        send_time
+      )
+      VALUES (?, ?, ?, ?, ?)
+    `,
+      )
+      .bind(
+        destinationChannel,
+        userId,
+        content,
+        imageUrl ?? null,
+        sendDateTime.toUnixInteger(),
+      )
+      .run()
+
+    if (imageAttachment) {
+      const attachment = c.ref.attachments?.[imageAttachment]
 
       if (attachment?.url) {
         const blob = await fetch(attachment.url).then((res) => res.blob())
 
-        return c.flags('EPHEMERAL').res(content, {
+        return c.flags('EPHEMERAL').res(contentFormatted, {
           blob,
           name: attachment.filename,
         })
       }
     }
 
-    return c.flags('EPHEMERAL').res(content)
+    return c.flags('EPHEMERAL').res(contentFormatted)
   },
 )

@@ -8,6 +8,7 @@ import { factory } from './init'
 
 type Bindings = CloudflareBindings & {
   CORS_ORIGIN: string
+  DB: D1Database
   DISCORD_TOKEN: string
   DISCORD_TEST_GUILD_ID: string
 }
@@ -42,7 +43,7 @@ export default {
     env: Bindings,
     ctx: ExecutionContext,
   ) {
-    console.log('cron processed!?!', '1456991439811772447')
+    console.log('cron processed', '1456991439811772447')
 
     // const rest = createRest(env.DISCORD_TOKEN)
 

@@ -16,16 +16,21 @@
     "predeploy": "npm run build-template",
     "predev": "npm run build-template",
     "rad": "npm run register && npm run deploy",
-    "register": "tsc && node --env-file=.env dist/register.js"
+    "register": "tsc && node --env-file=.env dist/register.js",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "npm run test watch"
   },
   "dependencies": {
     "discord-api-types": "^0.38.47",
     "discord-hono": "^0.21.2",
-    "hono": "^4.12.18"
+    "hono": "^4.12.18",
+    "luxon": "^3.7.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "@types/luxon": "^3.7.4",
     "@types/node": "^25.6.2",
     "ejs": "^5.0.2",
     "eslint": "^10.3.0",
@@ -33,6 +38,7 @@
     "prettier": "3.8.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.2",
+    "vitest": "^4.1.10",
     "wrangler": "^4.90.0"
   }
 }
