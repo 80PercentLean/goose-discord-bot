@@ -106,4 +106,12 @@ describe('parseSendTime', () => {
   it('returns null when "123" is input', () => {
     expect(parseSendTime('123')).toBe(null)
   })
+
+  it('returns null when "8/13" is input', () => {
+    expect(parseSendTime('8/13')).toBe(null)
+  })
+
+  it('returns null when "7:00pm" is input', () => {
+    expect(parseSendTime('7:00pm')).toBe(null)
+  })
 })

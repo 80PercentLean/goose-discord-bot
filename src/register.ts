@@ -17,10 +17,13 @@ const commands = [
     )
       .channel_types()
       .required(),
-    new Option('content', 'Message content').required(),
+    new Option(
+      'content',
+      'Message content - you can type "<br>" or "\\n" to insert a line break',
+    ).required(),
     new Option(
       'send_time',
-      'When to send the message in Pacific Time',
+      'When to send the message in Pacific Time (example: 8/13 7:00pm)',
     ).required(),
     new Option('image_attachment', 'Optional image attachment', 'Attachment'),
   ),
