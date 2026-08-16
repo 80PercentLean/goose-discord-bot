@@ -18,6 +18,10 @@ const commands = [
       .channel_types()
       .required(),
     new Option(
+      'title',
+      "Scheduler title that's only used for identification when looking up pending messages.",
+    ).required(),
+    new Option(
       'content',
       'Message content - you can type "<br>" or "\\n" to insert a line break',
     ).required(),

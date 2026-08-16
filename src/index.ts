@@ -21,7 +21,7 @@ interface ScheduledMessage {
   content: string
   image_url: string | null
   scheduled_at: number
-  status: 'pending' | 'sent' | 'failed' | 'canceled'
+  status: 'draft' | 'pending' | 'sent' | 'failed' | 'canceled'
   attempts: number
   last_error: string | null
   created_at: number
@@ -58,8 +58,6 @@ export default {
     env: Bindings,
     ctx: ExecutionContext,
   ) {
-    console.log('cron processed', '1456991439811772447')
-
     const now = Math.floor(Date.now() / 1000)
 
     const { results } = await env.DB.prepare(
