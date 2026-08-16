@@ -36,6 +36,9 @@ type ScheduleCommandContext = CommandContext<
   }
 >
 
+/**
+ * schedule command
+ */
 export const command_schedule = factory.command(
   new Command('schedule', 'Manage scheduled messages.').options(
     new SubCommand(
@@ -66,9 +69,6 @@ export const command_schedule = factory.command(
     new SubCommand('list', 'List pending scheduled messages.'),
   ),
 
-  /**
-   * schedule command
-   */
   async (c) => {
     switch (c.sub.command) {
       case 'create':

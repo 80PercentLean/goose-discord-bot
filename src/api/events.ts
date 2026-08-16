@@ -4,7 +4,7 @@ import { HTTPException } from 'hono/http-exception'
 
 export const events = new Hono<{
   Bindings: CloudflareBindings & {
-    DISCORD_API_RES: KVNamespace
+    KV: KVNamespace
     DISCORD_TOKEN: string
     DISCORD_TEST_GUILD_ID: string
   }
@@ -20,11 +20,11 @@ events.get('/', async (c) => {
 
   // Attempt to read cache
   if (filter === 'wg') {
-    data = await c.env.DISCORD_API_RES.get('wg', { type: 'json' })
+    data = await c.env.KV.get('wg', { type: 'json' })
   } else if (filter === 'cup-pogo') {
-    data = await c.env.DISCORD_API_RES.get('cup-pogo', { type: 'json' })
+    data = await c.env.KV.get('cup-pogo', { type: 'json' })
   } else if (!filter) {
-    data = await c.env.DISCORD_API_RES.get('all', { type: 'json' })
+    data = await c.env.KV.get('all', { type: 'json' })
   } else {
     throw new HTTPException(400, {
       message: 'Unsupported filter value',
@@ -112,13 +112,13 @@ events.get('/', async (c) => {
     }
 
     // Cache Discord API response for 5 minutes
-    await c.env.DISCORD_API_RES.put('wg', JSON.stringify(dataWg), {
+    await c.env.KV.put('wg', JSON.stringify(dataWg), {
       expirationTtl: 300,
     })
-    await c.env.DISCORD_API_RES.put('cup-pogo', JSON.stringify(dataCupPogo), {
+    await c.env.KV.put('cup-pogo', JSON.stringify(dataCupPogo), {
       expirationTtl: 300,
     })
-    await c.env.DISCORD_API_RES.put('all', JSON.stringify(dataAll), {
+    await c.env.KV.put('all', JSON.stringify(dataAll), {
       expirationTtl: 300,
     })
 

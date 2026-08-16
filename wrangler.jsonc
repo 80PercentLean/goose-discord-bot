@@ -38,9 +38,8 @@
   },
   "kv_namespaces": [
     {
-      "binding": "DISCORD_API_RES",
-      "id": "780d9d83b91d4819a6ef9e79ae8d7680",
-      "remote": true,
+      "binding": "KV",
+      "id": "b042466daa5242ab9b53cb3db95136cc",
     },
   ],
   /**
