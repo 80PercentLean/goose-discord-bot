@@ -1,4 +1,3 @@
-export * from './confirm'
 export * from './hello'
 export * from './help'
 export * from './honk'

@@ -9,6 +9,21 @@ export const formatLineBreaks = (content: string) =>
   content.replaceAll('\\n', '\n').replace(/<br\s*\/?>/gi, '\n')
 
 /**
+ * Get the file name from an image URL.
+ * @param url URL of image
+ * @returns File name
+ */
+export const getFileNameFromUrl = (url: string): string => {
+  const fileName = new URL(url).pathname.split('/').pop()
+
+  if (!fileName) {
+    throw new Error('Could not get file name from URL.')
+  }
+
+  return fileName
+}
+
+/**
  * Parse the input from the send_time option.
  * @param input Input from the send_time option
  * @returns Luxon DateTime instance

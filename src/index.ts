@@ -56,7 +56,7 @@ export default {
   async scheduled(
     controller: ScheduledController,
     env: Bindings,
-    ctx: ExecutionContext,
+    _ctx: ExecutionContext,
   ) {
     const now = Math.floor(Date.now() / 1000)
 
