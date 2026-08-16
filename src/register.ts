@@ -1,4 +1,4 @@
-import { Command, Option, register } from 'discord-hono'
+import { Command, Option, SubCommand, register } from 'discord-hono'
 
 const commands = [
   new Command('hello', 'Hello, World!').options(
@@ -6,30 +6,33 @@ const commands = [
   ),
   new Command('help', 'Docs URL'),
   new Command('honk', 'Check on Goose Bot.'),
-  new Command(
-    'schedule',
-    'Schedule a message to be sent in the future.',
-  ).options(
-    new Option(
-      'destination_channel',
-      'Channel or thread to send the message in',
-      'Channel',
-    )
-      .channel_types()
-      .required(),
-    new Option(
-      'title',
-      "Scheduler title that's only used for identification when looking up pending messages.",
-    ).required(),
-    new Option(
-      'content',
-      'Message content - you can type "<br>" or "\\n" to insert a line break',
-    ).required(),
-    new Option(
-      'send_time',
-      'When to send the message in Pacific Time (example: 8/13 7:00pm)',
-    ).required(),
-    new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+  new Command('schedule', 'Manage scheduled messages.').options(
+    new SubCommand(
+      'create',
+      'Schedule a message to be sent in the future.',
+    ).options(
+      new Option(
+        'destination_channel',
+        'Channel or thread to send the message in',
+        'Channel',
+      )
+        .channel_types()
+        .required(),
+      new Option(
+        'title',
+        "Scheduler title. It's only used for identifying the message in the list command.",
+      ).required(),
+      new Option(
+        'content',
+        'Message content - you can type "<br>" or "\\n" to insert a line break',
+      ).required(),
+      new Option(
+        'send_time',
+        'When to send the message in Pacific Time (example: 8/13 7:00pm)',
+      ).required(),
+      new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+    ),
+    new SubCommand('list', 'List pending scheduled messages.'),
   ),
 ]
 

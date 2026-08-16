@@ -22,7 +22,7 @@ CREATE TABLE scheduled_messages (
 
   -- Status of the scheduled message
   status TEXT NOT NULL DEFAULT 'draft'
-    CHECK (status IN ('draft', 'pending', 'sent', 'failed', 'canceled')),
+    CHECK (status IN ('draft', 'pending', 'sent', 'failed')),
 
   -- Number of attempts made to send the scheduled message
   attempts INTEGER NOT NULL DEFAULT 0,

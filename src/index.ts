@@ -6,29 +6,15 @@ import { api } from './api'
 import * as handlers from './handlers'
 import { formatLineBreaks } from './handlers/helper'
 import { factory } from './init'
+import { type BaseBindings, type ScheduledMessage } from './types'
 
-type Bindings = CloudflareBindings & {
+const discordApp = factory.discord().loader(Object.values(handlers))
+
+type Bindings = BaseBindings & {
   CORS_ORIGIN: string
-  DB: D1Database
   DISCORD_TOKEN: string
   DISCORD_TEST_GUILD_ID: string
 }
-
-interface ScheduledMessage {
-  id: number
-  channel_id: string
-  created_by: string
-  content: string
-  image_url: string | null
-  scheduled_at: number
-  status: 'draft' | 'pending' | 'sent' | 'failed' | 'canceled'
-  attempts: number
-  last_error: string | null
-  created_at: number
-  sent_at: number | null
-}
-
-const discordApp = factory.discord().loader(Object.values(handlers))
 
 const app = new Hono<{
   Bindings: Bindings
