@@ -8,6 +8,11 @@ import { formatLineBreaks, getFileNameFromUrl } from './handlers/helper'
 import { factory } from './init'
 import { type BaseBindings, type ScheduledMessage } from './types'
 
+interface MessageData {
+  content: string
+  flags?: number
+}
+
 const MSG_SCHEDULER_CH_ID = '1466938432176652372'
 
 const discordApp = factory.discord().loader(Object.values(handlers))
@@ -50,7 +55,7 @@ export default {
 
     const { results } = await env.DB.prepare(
       `
-          SELECT *
+          SELECT id, channel_id, content, image_url, suppress_embeds, attempts
           FROM scheduled_messages
           WHERE status = 'pending'
             AND send_time <= ?
@@ -59,7 +64,14 @@ export default {
         `,
     )
       .bind(now)
-      .all<ScheduledMessage>()
+      .all<{
+        id: ScheduledMessage['id']
+        channel_id: ScheduledMessage['channel_id']
+        content: ScheduledMessage['content']
+        image_url: ScheduledMessage['image_url']
+        suppress_embeds: ScheduledMessage['suppress_embeds']
+        attempts: ScheduledMessage['attempts']
+      }>()
 
     if (results.length > 0) {
       console.log(`Encountered ${results.length} scheduled message(s).`)
@@ -79,6 +91,7 @@ export default {
       channel_id: channelId,
       content,
       image_url: imageUrl,
+      suppress_embeds: suppressEmbeds,
     } of results) {
       const newAttempts = attempts + 1
 
@@ -102,13 +115,18 @@ export default {
         }
 
         // Send the scheduled message
+        const data: MessageData = {
+          content: formatLineBreaks(content),
+        }
+        if (suppressEmbeds) {
+          data.flags = 4
+        }
+
         const messageRes = await rest(
           'POST',
           $channels$_$messages,
           [channelId],
-          {
-            content: formatLineBreaks(content),
-          },
+          data,
           img,
         )
 

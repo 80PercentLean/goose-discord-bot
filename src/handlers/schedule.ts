@@ -34,10 +34,15 @@ type ScheduleCommandContext = CommandContext<
           }> &
           Partial<{
             image_url: string
+          }> &
+          Partial<{
+            suppress_embeds: boolean
           }>)
       | undefined
   }
 >
+
+type FlagsArray = ['EPHEMERAL'] | ['EPHEMERAL', 'SUPPRESS_EMBEDS']
 
 /**
  * schedule command
@@ -69,6 +74,11 @@ export const command_schedule = factory.command(
       ).required(),
       new Option('image_attachment', 'Optional image attachment', 'Attachment'),
       new Option('image_url', 'Optional image URL'),
+      new Option(
+        'suppress_embeds',
+        'Do not include embeds when true',
+        'Boolean',
+      ),
     ),
     new SubCommand('list', 'List pending scheduled messages.'),
   ),
@@ -119,6 +129,7 @@ const handleNew = async (c: ScheduleCommandContext) => {
     image_attachment: imageAttachment,
     image_url: imageUrlInput,
     send_time: sendTime,
+    suppress_embeds: suppressEmbeds,
     title,
   } = c.var
 
@@ -160,9 +171,10 @@ const handleNew = async (c: ScheduleCommandContext) => {
         title,
         content,
         image_url,
-        send_time
+        send_time,
+        suppress_embeds
       )
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       RETURNING id
     `,
   )
@@ -173,6 +185,7 @@ const handleNew = async (c: ScheduleCommandContext) => {
       contentCleaned,
       imageUrl ?? null,
       sendDateTime.toUnixInteger(),
+      suppressEmbeds ? true : false,
     )
     .first<{ id: ScheduledMessage['id'] }>()
 
@@ -423,6 +436,7 @@ export const component_schedule_preview = factory.component(
       .first<{
         content: ScheduledMessage['content']
         image_url: ScheduledMessage['image_url']
+        suppress_embeds: ScheduledMessage['suppress_embeds']
       }>()
 
     if (!result) {
@@ -447,8 +461,12 @@ export const component_schedule_preview = factory.component(
       }
     }
 
+    const flags: FlagsArray = result.suppress_embeds
+      ? ['EPHEMERAL', 'SUPPRESS_EMBEDS']
+      : ['EPHEMERAL']
+
     console.log(`Previewed message ${id}.`)
-    return c.flags('EPHEMERAL').res(
+    return c.flags(...flags).res(
       {
         content: contentFormatted,
       },

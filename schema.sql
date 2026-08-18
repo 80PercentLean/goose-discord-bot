@@ -20,6 +20,10 @@ CREATE TABLE scheduled_messages (
   -- Time to send the message as Unix timestamp in seconds
   send_time INTEGER NOT NULL,
 
+  -- Do not include any embeds with the message when true
+  suppress_embeds BOOLEAN NOT NULL DEFAULT FALSE
+    CHECK (suppress_embeds IN (FALSE, TRUE)),
+
   -- Status of the scheduled message
   status TEXT NOT NULL DEFAULT 'draft'
     CHECK (status IN ('draft', 'pending', 'sent', 'failed')),

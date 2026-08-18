@@ -32,6 +32,11 @@ const commands = [
       ).required(),
       new Option('image_attachment', 'Optional image attachment', 'Attachment'),
       new Option('image_url', 'Optional image URL'),
+      new Option(
+        'suppress_embeds',
+        'Do not include embeds when true',
+        'Boolean',
+      ),
     ),
     new SubCommand('list', 'List pending scheduled messages.'),
   ),

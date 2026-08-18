@@ -7,6 +7,7 @@ export interface ScheduledMessage {
   title: string
   content: string
   image_url: string | null
+  suppress_embeds: boolean
   send_time: number
   status: 'draft' | 'pending' | 'sent' | 'failed'
   attempts: number
