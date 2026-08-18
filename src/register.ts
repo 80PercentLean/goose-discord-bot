@@ -8,7 +8,7 @@ const commands = [
   new Command('honk', 'Check on Goose Bot.'),
   new Command('schedule', 'Manage scheduled messages.').options(
     new SubCommand(
-      'create',
+      'new',
       'Schedule a message to be sent in the future.',
     ).options(
       new Option(
@@ -24,13 +24,14 @@ const commands = [
       ).required(),
       new Option(
         'content',
-        'Message content - you can type "<br>" or "\\n" to insert a line break',
+        'Message content - you can type "<br>" or "\\n" to insert a line break (2000 character limit)',
       ).required(),
       new Option(
         'send_time',
         'When to send the message in Pacific Time (example: 8/13 7:00pm)',
       ).required(),
       new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+      new Option('image_url', 'Optional image URL'),
     ),
     new SubCommand('list', 'List pending scheduled messages.'),
   ),

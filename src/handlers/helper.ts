@@ -1,6 +1,15 @@
 import { DateTime } from 'luxon'
 
 /**
+ * Cleans up the input from the content option by removing actual line breaks.
+ * Multiline Discord inputs can break some markdown formatting when the message is sent,
+ * so this prevents that.
+ * @param content Input from the content option
+ */
+export const cleanUpContent = (content: string) =>
+  content.replace(/\r\n|\r|\n/g, '')
+
+/**
  * Convert \\n and <br> in content into true line breaks.
  * @param content Input from the content option
  * @returns String with true line breaks

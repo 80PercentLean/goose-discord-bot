@@ -13,7 +13,7 @@ import { DateTime } from 'luxon'
 import { factory } from '../init'
 import { type BaseBindings, type ScheduledMessage } from '../types'
 import { isAdmin, isTeamMember } from '../util'
-import { formatLineBreaks, getFileNameFromUrl } from './helper'
+import { cleanUpContent, formatLineBreaks, getFileNameFromUrl } from './helper'
 import { parseSendTime } from './helper'
 
 type ScheduleCommandContext = CommandContext<
@@ -31,6 +31,9 @@ type ScheduleCommandContext = CommandContext<
           send_time: string
         } & Partial<{
             image_attachment: string
+          }> &
+          Partial<{
+            image_url: string
           }>)
       | undefined
   }
@@ -42,7 +45,7 @@ type ScheduleCommandContext = CommandContext<
 export const command_schedule = factory.command(
   new Command('schedule', 'Manage scheduled messages.').options(
     new SubCommand(
-      'create',
+      'new',
       'Schedule a message to be sent in the future.',
     ).options(
       new Option(
@@ -58,45 +61,47 @@ export const command_schedule = factory.command(
       ).required(),
       new Option(
         'content',
-        'Message content - you can type "<br>" or "\\n" to insert a line break',
+        'Message content - you can type "<br>" or "\\n" to insert a line break (2000 character limit)',
       ).required(),
       new Option(
         'send_time',
         'When to send the message in Pacific Time (example: 8/13 7:00pm)',
       ).required(),
       new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+      new Option('image_url', 'Optional image URL'),
     ),
     new SubCommand('list', 'List pending scheduled messages.'),
   ),
 
   async (c) => {
     switch (c.sub.command) {
-      case 'create':
-        return handleCreate(c)
+      case 'new':
+        return handleNew(c)
 
       case 'list':
         return handleList(c)
 
       default:
-        return c.flags('EPHEMERAL').res('Unknown schedule command.')
+        console.log('Unknown schedule command received.')
+        return c.flags('EPHEMERAL').res('❌ Unknown schedule received.')
     }
   },
 )
 
 /**
- * schedule create subcommand
+ * schedule new subcommand
  */
-const handleCreate = async (c: ScheduleCommandContext) => {
+const handleNew = async (c: ScheduleCommandContext) => {
   const userId = c.interaction?.member?.user?.id
+  console.log(`Schedule new command received from: ${userId}`)
+  console.log(c.var)
 
   if (!userId) {
+    console.error('Unable to determine user sending the command.')
     return c
       .flags('EPHEMERAL')
-      .res('Unable to determine user sending the command.')
+      .res('❌ Unable to determine user sending the command.')
   }
-
-  console.log(`Schedule create command received from: ${userId}`)
-  console.log(c.var)
 
   if (
     !isAdmin(c.interaction.member?.permissions) &&
@@ -112,22 +117,39 @@ const handleCreate = async (c: ScheduleCommandContext) => {
     content,
     destination_channel: destinationChannel,
     image_attachment: imageAttachment,
+    image_url: imageUrlInput,
     send_time: sendTime,
     title,
   } = c.var
+
+  const contentCleaned = cleanUpContent(content)
+  if (contentCleaned.length > 2000) {
+    console.error(
+      `The cleaned message ended up being ${contentCleaned.length} characters long. Please reduce the message to be at most 2000 characters.`,
+    )
+    return c
+      .flags('EPHEMERAL')
+      .res(
+        `❌ The cleaned message ended up being ${contentCleaned.length} characters long. Please reduce the message to be at most 2000 characters.`,
+      )
+  }
 
   // Validate the send time input
   const sendDateTime = parseSendTime(sendTime)
 
   if (!sendDateTime) {
+    console.error('Invalid send time. Use a format like 8/13 7:00pm.')
     return c
       .flags('EPHEMERAL')
-      .res('❌ ERROR: Invalid send time. Use a format like `8/13 7:00pm`.')
+      .res('❌ Invalid send time. Use a format like `8/13 7:00pm`.')
   }
 
-  const imageUrl = imageAttachment
-    ? c.ref.attachments?.[imageAttachment]?.url
-    : undefined
+  let imageUrl
+  if (imageAttachment) {
+    imageUrl = c.ref.attachments?.[imageAttachment]?.url
+  } else if (imageUrlInput) {
+    imageUrl = imageUrlInput
+  }
 
   const result = await c.env.DB.prepare(
     `
@@ -147,14 +169,17 @@ const handleCreate = async (c: ScheduleCommandContext) => {
       destinationChannel,
       userId,
       title,
-      content,
+      contentCleaned,
       imageUrl ?? null,
       sendDateTime.toUnixInteger(),
     )
     .first<{ id: ScheduledMessage['id'] }>()
 
   if (!result) {
-    return c.flags('EPHEMERAL').res('Failed to create scheduled message draft.')
+    console.error('Failed to create scheduled message draft.')
+    return c
+      .flags('EPHEMERAL')
+      .res('❌ Failed to create scheduled message draft.')
   }
 
   console.log(`Draft message ${result.id} created.`)
@@ -167,13 +192,13 @@ const handleCreate = async (c: ScheduleCommandContext) => {
       `**Channel:** <#${destinationChannel}>\n` +
       `**Send Time:** ${sendDateTime.toFormat('M/d/yyyy h:mm a ZZZZ')}`,
     components: new Components().row(
-      new Button('schedule-preview', 'Preview', 'Primary').custom_value(
+      new Button('schedule-preview', ['🔍', 'Preview'], 'Primary').custom_value(
         String(result.id),
       ),
-      new Button('schedule-confirm', 'Confirm', 'Success').custom_value(
+      new Button('schedule-confirm', ['✅', 'Confirm'], 'Success').custom_value(
         String(result.id),
       ),
-      new Button('schedule-cancel', 'Cancel', 'Danger').custom_value(
+      new Button('schedule-cancel', ['❌', 'Cancel'], 'Danger').custom_value(
         String(result.id),
       ),
     ),
@@ -185,28 +210,31 @@ const handleCreate = async (c: ScheduleCommandContext) => {
  */
 const handleList = async (c: ScheduleCommandContext) => {
   const userId = c.interaction?.member?.user?.id
+  console.log(`Schedule list command received from: ${userId}`)
 
   if (!userId) {
+    console.error('Unable to determine user sending the command.')
     return c
       .flags('EPHEMERAL')
-      .res('Unable to determine user sending the command.')
+      .res('❌ Unable to determine user sending the command.')
   }
-
-  console.log(`Schedule list command received from: ${userId}`)
 
   const { results } = await c.env.DB.prepare(
     `
-        SELECT id, title, channel_id, send_time
+        SELECT id, created_by, title, channel_id, send_time
         FROM scheduled_messages
         WHERE status = 'pending'
         ORDER BY send_time ASC
       `,
   ).all<{
     id: ScheduledMessage['id']
+    created_by: ScheduledMessage['created_by']
     channel_id: ScheduledMessage['channel_id']
     title: ScheduledMessage['title']
     send_time: ScheduledMessage['send_time']
   }>()
+
+  console.log(`List command encountered ${results.length} scheduled messages.`)
 
   if (results.length === 0) {
     return c.flags('EPHEMERAL').res('There are no pending scheduled messages.')
@@ -215,26 +243,31 @@ const handleList = async (c: ScheduleCommandContext) => {
   return c.flags('EPHEMERAL', 'IS_COMPONENTS_V2').res({
     components: [
       new Content('## Scheduled Message List'),
-      ...results.map((msg) => {
-        const deleteButton = new Button(
-          'schedule-delete',
-          ['🗑️', 'Delete'],
-          'Danger',
-        ).custom_value(String(msg.id))
 
+      ...results.map((msg) => {
         return new Layout('Container').components(
-          new Layout('Section')
-            .components(
-              new Content(
-                `**ID:** ${msg.id}\n` +
-                  `**Title:** ${msg.title}\n` +
-                  `**Channel:** <#${msg.channel_id}>\n` +
-                  `**Send Time:** ${DateTime.fromSeconds(msg.send_time, {
-                    zone: 'America/Los_Angeles',
-                  }).toFormat('M/d/yyyy h:mm a ZZZZ')}`,
-              ),
-            )
-            .accessory(deleteButton),
+          new Content(
+            `**ID:** ${msg.id}\n` +
+              `**Title:** ${msg.title}\n` +
+              `**Channel:** <#${msg.channel_id}>\n` +
+              `**Send Time:** ${DateTime.fromSeconds(msg.send_time, {
+                zone: 'America/Los_Angeles',
+              }).toFormat('M/d/yyyy h:mm a ZZZZ')}\n` +
+              `**Author:** <@${msg.created_by}>`,
+          ),
+
+          new Layout('Action Row').components(
+            new Button(
+              'schedule-preview',
+              ['🔍', 'Preview'],
+              'Primary',
+            ).custom_value(String(msg.id)),
+            new Button(
+              'schedule-delete',
+              ['🗑️', 'Delete'],
+              'Danger',
+            ).custom_value(String(msg.id)),
+          ),
         )
       }),
     ],
@@ -271,14 +304,20 @@ export const component_schedule_confirm = factory.component(
       }>()
 
     if (!result) {
+      console.error(
+        'A problem occurred and this scheduled message draft may not have been set to pending.',
+      )
       return c
         .flags('EPHEMERAL')
         .res(
-          'A problem occurred and this scheduled message draft may not have been set to pending.',
+          '❌ A problem occurred and this scheduled message draft may not have been set to pending.',
         )
     }
 
     if (result.status !== 'pending') {
+      console.error(
+        'A problem occurred and this scheduled message draft was not set to pending.',
+      )
       return c
         .update()
         .res(
@@ -300,9 +339,11 @@ export const component_schedule_confirm = factory.component(
         `**Channel:** <#${result.channel_id}>\n` +
         `**Send Time:** ${sendTimeFormatted}`,
       components: new Components().row(
-        new Button('schedule-preview', 'Preview', 'Primary').custom_value(
-          String(id),
-        ),
+        new Button(
+          'schedule-preview',
+          ['🔍', 'Preview'],
+          'Primary',
+        ).custom_value(String(id)),
       ),
     })
   },
@@ -373,27 +414,34 @@ export const component_schedule_preview = factory.component(
       }>()
 
     if (!result) {
+      console.error(
+        'A problem occurred and the scheduled message could not be found.',
+      )
       return c
         .flags('EPHEMERAL')
-        .res('A problem occurred and the scheduled message could not be found.')
+        .res(
+          '❌ A problem occurred and the scheduled message could not be found.',
+        )
     }
 
     const contentFormatted = formatLineBreaks(result.content)
 
+    let img
     if (result.image_url) {
       const blob = await fetch(result.image_url).then((res) => res.blob())
-
-      return c.flags('EPHEMERAL').res(contentFormatted, {
+      img = {
         blob,
         name: getFileNameFromUrl(result.image_url),
-      })
+      }
     }
 
     console.log(`Previewed message ${id}.`)
-
-    return c.flags('EPHEMERAL').res({
-      content: contentFormatted,
-    })
+    return c.flags('EPHEMERAL').res(
+      {
+        content: contentFormatted,
+      },
+      img,
+    )
   },
 )
 
@@ -414,11 +462,12 @@ export const component_schedule_delete = factory.component(
     DELETE FROM scheduled_messages
     WHERE id = ?
       AND status = 'pending'
-    RETURNING channel_id, title, send_time, status
+    RETURNING created_by, channel_id, title, send_time, status
   `,
     )
       .bind(id)
       .first<{
+        created_by: ScheduledMessage['created_by']
         channel_id: ScheduledMessage['channel_id']
         title: ScheduledMessage['title']
         send_time: ScheduledMessage['send_time']
@@ -445,7 +494,8 @@ export const component_schedule_delete = factory.component(
               `**Channel:** <#${result.channel_id}>\n` +
               `**Send Time:** ${DateTime.fromSeconds(result.send_time, {
                 zone: 'America/Los_Angeles',
-              }).toFormat('M/d/yyyy h:mm a ZZZZ')}`,
+              }).toFormat('M/d/yyyy h:mm a ZZZZ')}\n` +
+              `**Author:** <@${result.created_by}>`,
           ),
         ],
       })
