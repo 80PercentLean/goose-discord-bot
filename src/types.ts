@@ -3,6 +3,7 @@ import type { CommandContext } from 'discord-hono'
 export type BaseBindings = CloudflareBindings & { DB: D1Database }
 
 export interface MessageData {
+  attachments?: { id: string; filename: string }[]
   content: string
   flags?: number
 }
@@ -28,6 +29,10 @@ export type ScheduleCommandContext = CommandContext<
           }> &
           Partial<{
             suppress_embeds: boolean
+          }> & {
+            discord_id: string
+          } & Partial<{
+            remove_image: boolean
           }>)
       | undefined
   }
@@ -47,4 +52,5 @@ export interface ScheduledMessage {
   last_error: string | null
   created_at: number
   sent_at: number | null
+  discord_id: string | null
 }

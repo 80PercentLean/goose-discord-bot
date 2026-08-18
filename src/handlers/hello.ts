@@ -12,7 +12,7 @@ export const command_hello = factory.command(
   ),
   (c) => {
     if (!validateUserPermissions(c.interaction)) {
-      return c.res('Goose Bot denies you.')
+      return c.res('🚫 Goose Bot denies you.')
     }
 
     return c.res(`Hello, ${c.var.name ?? 'World'}!`)

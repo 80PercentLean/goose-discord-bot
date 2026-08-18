@@ -39,6 +39,24 @@ const commands = [
       ),
     ),
     new SubCommand('list', 'List pending scheduled messages.'),
+    new SubCommand('update', 'Update a sent scheduled message.').options(
+      new Option(
+        'discord_id',
+        "Discord message ID - not to be confused with Goose Bot's message ID!",
+      ).required(),
+      new Option(
+        'content',
+        'Message content - you can type "<br>" or "\\n" to insert a line break (2000 character limit)',
+      ).required(),
+      new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+      new Option('image_url', 'Optional image URL'),
+      new Option(
+        'suppress_embeds',
+        'Do not include embeds when true',
+        'Boolean',
+      ),
+      new Option('remove_image', 'Remove an existing image', 'Boolean'),
+    ),
   ),
   new Command(
     'puppet',

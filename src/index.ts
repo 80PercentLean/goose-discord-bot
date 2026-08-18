@@ -54,7 +54,7 @@ export default {
 
     const { results } = await env.DB.prepare(
       `
-          SELECT id, channel_id, content, image_url, suppress_embeds, attempts
+          SELECT id, channel_id, created_by, content, image_url, suppress_embeds, attempts
           FROM scheduled_messages
           WHERE status = 'pending'
             AND send_time <= ?
@@ -67,6 +67,7 @@ export default {
         id: ScheduledMessage['id']
         channel_id: ScheduledMessage['channel_id']
         content: ScheduledMessage['content']
+        created_by: ScheduledMessage['created_by']
         image_url: ScheduledMessage['image_url']
         suppress_embeds: ScheduledMessage['suppress_embeds']
         attempts: ScheduledMessage['attempts']
@@ -89,12 +90,15 @@ export default {
       attempts,
       channel_id: channelId,
       content,
+      created_by: createdBy,
       image_url: imageUrl,
       suppress_embeds: suppressEmbeds,
     } of results) {
       const newAttempts = attempts + 1
 
       console.log(`Sending message ${id}...`)
+
+      let discordId
 
       try {
         let img
@@ -129,7 +133,26 @@ export default {
           img,
         )
 
-        if (!messageRes.ok) {
+        if (messageRes.ok) {
+          ;({ id: discordId } = (await messageRes.json()) as {
+            id: string
+          })
+
+          if (!discordId) {
+            throw new Error('Encountered an invalid Discord message ID.')
+          }
+
+          // Send confirmation message to #msg-scheduler
+          const messageUrl =
+            `https://discord.com/channels/` +
+            `${env.DISCORD_TEST_GUILD_ID}/${channelId}/${discordId}`
+          await rest(
+            'POST',
+            $channels$_$messages,
+            [MSG_SCHEDULER_CH_ID],
+            `Message with Discord ID [${discordId}](${messageUrl}) written by <@${createdBy}> was sent in <#${channelId}>.`,
+          )
+        } else {
           const body = await messageRes.text()
           throw new Error(body)
         }
@@ -168,7 +191,9 @@ export default {
         return
       }
 
-      console.log(`Message ${id} sent.`)
+      console.log(
+        `Message ${id} sent was sent as Discord message ${discordId}.`,
+      )
 
       try {
         // Update the database
@@ -179,11 +204,12 @@ export default {
                 status = 'sent',
                 attempts = attempts + 1,
                 sent_at = unixepoch(),
+                discord_id = ?,
                 last_error = NULL
               WHERE id = ?
             `,
         )
-          .bind(id)
+          .bind(discordId, id)
           .run()
       } catch (err) {
         const errLog = err instanceof Error ? err.message : String(err)

@@ -48,7 +48,7 @@ export const command_puppet = factory.command(
       console.error(
         `User ${userId} does not have the permissions to use the schedule command.`,
       )
-      return c.res('Goose Bot denies you.')
+      return c.res('🚫 Goose Bot denies you.')
     }
 
     const {
@@ -59,12 +59,25 @@ export const command_puppet = factory.command(
       suppress_embeds: suppressEmbeds,
     } = c.var
 
+    // Check if content is still too long after clean up
+    const contentFormatted = formatLineBreaks(content)
+    if (contentFormatted.length > 2000) {
+      console.error(
+        `The cleaned message ended up being ${contentFormatted.length} characters long. Please reduce the message to be at most 2000 characters.`,
+      )
+      return c
+        .flags('EPHEMERAL')
+        .res(
+          `❌ The cleaned message ended up being ${contentFormatted.length} characters long. Please reduce the message to be at most 2000 characters.`,
+        )
+    }
+
     const rest = createRest(c.env.DISCORD_TOKEN)
 
     try {
+      // Setup the image if it is available
       let img
       let imageUrl
-
       if (imageAttachment) {
         imageUrl = c.ref.attachments?.[imageAttachment]?.url
       } else if (imageUrlInput) {
@@ -88,7 +101,7 @@ export const command_puppet = factory.command(
 
       // Send the scheduled message
       const data: MessageData = {
-        content: formatLineBreaks(content),
+        content: contentFormatted,
       }
       if (suppressEmbeds) {
         data.flags = 4
@@ -107,12 +120,13 @@ export const command_puppet = factory.command(
         throw new Error(body)
       }
     } catch (err) {
-      const errMsg = `Encountered an error while puppeting.`
+      const errMsg = 'Encountered an error while puppeting.'
       const errLog = err instanceof Error ? err.message : String(err)
       console.error(errMsg)
       console.error(errLog)
     }
 
+    // Send public message back to commander to record puppeteering
     return c.res(`<@${userId}> puppeteered Goose Bot.`)
   },
 )

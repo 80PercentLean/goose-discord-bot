@@ -10,7 +10,11 @@ import {
 import { DateTime } from 'luxon'
 
 import { factory } from '../init'
-import { type ScheduleCommandContext, type ScheduledMessage } from '../types'
+import {
+  type MessageData,
+  type ScheduleCommandContext,
+  type ScheduledMessage,
+} from '../types'
 import {
   cleanUpContent,
   formatLineBreaks,
@@ -58,6 +62,24 @@ export const command_schedule = factory.command(
       ),
     ),
     new SubCommand('list', 'List pending scheduled messages.'),
+    new SubCommand('update', 'Update a sent scheduled message.').options(
+      new Option(
+        'discord_id',
+        "Discord message ID - not to be confused with Goose Bot's message ID!",
+      ).required(),
+      new Option(
+        'content',
+        'Message content - you can type "<br>" or "\\n" to insert a line break (2000 character limit)',
+      ).required(),
+      new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+      new Option('image_url', 'Optional image URL'),
+      new Option(
+        'suppress_embeds',
+        'Do not include embeds when true',
+        'Boolean',
+      ),
+      new Option('remove_image', 'Remove an existing image', 'Boolean'),
+    ),
   ),
 
   async (c) => {
@@ -67,6 +89,9 @@ export const command_schedule = factory.command(
 
       case 'list':
         return handleList(c)
+
+      case 'update':
+        return handleUpdate(c)
 
       default:
         console.log('Unknown schedule command received.')
@@ -94,7 +119,7 @@ const handleNew = async (c: ScheduleCommandContext) => {
     console.error(
       `User ${userId} does not have the permissions to use the schedule command.`,
     )
-    return c.res('Goose Bot denies you.')
+    return c.res('🚫 Goose Bot denies you.')
   }
 
   const {
@@ -108,6 +133,8 @@ const handleNew = async (c: ScheduleCommandContext) => {
   } = c.var
 
   const contentCleaned = cleanUpContent(content)
+
+  // Check if content is still too long after clean up
   const contentTrueLength = formatLineBreaks(contentCleaned).length
   if (contentTrueLength > 2000) {
     console.error(
@@ -130,6 +157,7 @@ const handleNew = async (c: ScheduleCommandContext) => {
       .res('❌ Invalid send time. Use a format like `8/13 7:00pm`.')
   }
 
+  // Setup the image if it is available
   let imageUrl
   if (imageAttachment) {
     imageUrl = c.ref.attachments?.[imageAttachment]?.url
@@ -137,6 +165,7 @@ const handleNew = async (c: ScheduleCommandContext) => {
     imageUrl = imageUrlInput
   }
 
+  // Create the draft in the database
   const result = await c.env.DB.prepare(
     `
       INSERT INTO scheduled_messages (
@@ -170,8 +199,8 @@ const handleNew = async (c: ScheduleCommandContext) => {
       .res('❌ Failed to create scheduled message draft.')
   }
 
+  // Send the ephemeral message back to the author
   console.log(`Draft message ${result.id} created.`)
-
   return c.flags('EPHEMERAL').res({
     content:
       `## Confirm Scheduled Message\n\n` +
@@ -211,9 +240,10 @@ const handleList = async (c: ScheduleCommandContext) => {
     console.error(
       `User ${userId} does not have the permissions to use the schedule command.`,
     )
-    return c.res('Goose Bot denies you.')
+    return c.res('🚫 Goose Bot denies you.')
   }
 
+  // Retrieve the pending messages from the database
   const { results } = await c.env.DB.prepare(
     `
         SELECT id, created_by, title, channel_id, send_time
@@ -228,13 +258,14 @@ const handleList = async (c: ScheduleCommandContext) => {
     title: ScheduledMessage['title']
     send_time: ScheduledMessage['send_time']
   }>()
-
   console.log(`List command encountered ${results.length} scheduled messages.`)
 
   if (results.length === 0) {
+    // No pending scheduled messages were found, so let the commander know through an ephemeral message
     return c.flags('EPHEMERAL').res('There are no pending scheduled messages.')
   }
 
+  // Pending scheduled messages were found, so list them to the commander through an ephemeral message
   return c.flags('EPHEMERAL', 'IS_COMPONENTS_V2').res({
     components: [
       new Content('## Scheduled Message List'),
@@ -267,6 +298,156 @@ const handleList = async (c: ScheduleCommandContext) => {
       }),
     ],
   })
+}
+
+/**
+ * schedule update subcommand
+ */
+const handleUpdate = async (c: ScheduleCommandContext) => {
+  const userId = c.interaction?.member?.user?.id
+  console.log(`Schedule update command received from: ${userId}`)
+
+  if (!userId) {
+    console.error('Unable to determine user sending the command.')
+    return c
+      .flags('EPHEMERAL')
+      .res('❌ Unable to determine user sending the command.')
+  }
+
+  if (!validateUserPermissions(c.interaction)) {
+    console.error(
+      `User ${userId} does not have the permissions to use the schedule command.`,
+    )
+    return c.res('🚫 Goose Bot denies you.')
+  }
+
+  const {
+    content,
+    discord_id: discordId,
+    image_attachment: imageAttachment,
+    image_url: imageUrlInput,
+    remove_image: removeImage,
+    suppress_embeds: suppressEmbeds,
+  } = c.var
+
+  const contentCleaned = cleanUpContent(content)
+
+  // Check if content is still too long after clean up
+  const contentFormatted = formatLineBreaks(contentCleaned)
+  if (contentFormatted.length > 2000) {
+    console.error(
+      `The cleaned message ended up being ${contentFormatted.length} characters long. Please reduce the message to be at most 2000 characters.`,
+    )
+    return c
+      .flags('EPHEMERAL')
+      .res(
+        `❌ The cleaned message ended up being ${contentFormatted.length} characters long. Please reduce the message to be at most 2000 characters.`,
+      )
+  }
+
+  const result = await c.env.DB.prepare(
+    `
+    SELECT *
+    FROM scheduled_messages
+    WHERE discord_id = ?
+  `,
+  )
+    .bind(discordId)
+    .first<ScheduledMessage>()
+
+  if (!result) {
+    console.error(
+      'A problem occurred and the sent scheduled message could not be found.',
+    )
+    return c
+      .flags('EPHEMERAL')
+      .res(
+        '❌ A problem occurred and the sent scheduled message could not be found.',
+      )
+  }
+
+  if (!result.discord_id) {
+    console.error('Encountered an invalid Discord message ID.')
+    return c
+      .flags('EPHEMERAL')
+      .res('❌ Encountered an invalid Discord message ID.')
+  }
+
+  try {
+    // Setup the image if it is available
+    let img
+    let imageUrl
+    const data: MessageData = {
+      content: contentFormatted,
+    }
+
+    if (removeImage) {
+      // Setting attachments to an empty array will delete an existing image
+      // This condition also prevents any other images from being attached if they were sent with the command
+      data.attachments = []
+    } else if (imageAttachment) {
+      imageUrl = c.ref.attachments?.[imageAttachment]?.url
+    } else if (imageUrlInput) {
+      imageUrl = imageUrlInput
+    }
+
+    if (imageUrl) {
+      const imageRes = await fetch(imageUrl)
+      if (!imageRes.ok) {
+        throw new Error(
+          `Failed to fetch image: ${imageRes.status} ${imageRes.statusText}`,
+        )
+      }
+
+      const blob = await imageRes.blob()
+      img = {
+        blob,
+        name: getFileNameFromUrl(imageUrl),
+      }
+    }
+
+    // Update the sent scheduled message
+    if (suppressEmbeds) {
+      data.flags = 4
+    }
+    if (img) {
+      data.attachments = [
+        {
+          id: '0',
+          filename: img.name,
+        },
+      ]
+    }
+
+    const messageRes = await c.rest(
+      'PATCH',
+      '/channels/{channel.id}/messages/{message.id}',
+      [result.channel_id, result.discord_id],
+      data,
+      img,
+    )
+
+    if (!messageRes.ok) {
+      const body = await messageRes.text()
+      throw new Error(body)
+    }
+  } catch (err) {
+    const errMsg =
+      'Encountered an error while updating the sent scheduled message.'
+    const errLog = err instanceof Error ? err.message : String(err)
+    console.error(errMsg)
+    console.error(errLog)
+  }
+
+  console.log(`Sent scheduled message ${discordId} was updated.`)
+
+  // Send public message back to commander to record update
+  const messageUrl =
+    `https://discord.com/channels/` +
+    `${c.env.DISCORD_TEST_GUILD_ID}/${result.channel_id}/${result.discord_id}`
+  return c.res(
+    `<@${userId}> updated sent scheduled message [${discordId}](${messageUrl}).`,
+  )
 }
 
 /**

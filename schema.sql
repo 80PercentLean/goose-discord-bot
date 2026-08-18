@@ -38,7 +38,10 @@ CREATE TABLE scheduled_messages (
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
 
   -- Time scheduled message was sent as Unix timestamp in seconds
-  sent_at INTEGER
+  sent_at INTEGER,
+
+  -- ID of the sent Discord message
+  discord_id TEXT
 );
 
 CREATE INDEX idx_scheduled_messages_due
