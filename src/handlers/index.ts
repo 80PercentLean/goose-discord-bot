@@ -1,5 +1,6 @@
 export * from './hello'
 export * from './help'
 export * from './honk'
+export * from './puppet'
 export * from './schedule'
 export * from './utils'

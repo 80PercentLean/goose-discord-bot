@@ -1,7 +1,7 @@
 import { Command, Option } from 'discord-hono'
 
 import { factory } from '../init'
-import { isAdmin, isTeamMember } from '../util'
+import { validateUserPermissions } from './helper'
 
 /**
  * hello Discord bot command
@@ -11,10 +11,7 @@ export const command_hello = factory.command(
     new Option('name', 'Your name'),
   ),
   (c) => {
-    if (
-      !isAdmin(c.interaction.member?.permissions) &&
-      !isTeamMember(c.interaction.member?.roles)
-    ) {
+    if (!validateUserPermissions(c.interaction)) {
       return c.res('Goose Bot denies you.')
     }
 

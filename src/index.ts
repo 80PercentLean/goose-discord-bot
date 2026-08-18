@@ -6,12 +6,11 @@ import { api } from './api'
 import * as handlers from './handlers'
 import { formatLineBreaks, getFileNameFromUrl } from './handlers/helper'
 import { factory } from './init'
-import { type BaseBindings, type ScheduledMessage } from './types'
-
-interface MessageData {
-  content: string
-  flags?: number
-}
+import {
+  type BaseBindings,
+  type MessageData,
+  type ScheduledMessage,
+} from './types'
 
 const MSG_SCHEDULER_CH_ID = '1466938432176652372'
 

@@ -1,7 +1,6 @@
 import {
   Button,
   Command,
-  type CommandContext,
   Components,
   Content,
   Layout,
@@ -11,36 +10,14 @@ import {
 import { DateTime } from 'luxon'
 
 import { factory } from '../init'
-import { type BaseBindings, type ScheduledMessage } from '../types'
-import { isAdmin, isTeamMember } from '../util'
-import { cleanUpContent, formatLineBreaks, getFileNameFromUrl } from './helper'
+import { type ScheduleCommandContext, type ScheduledMessage } from '../types'
+import {
+  cleanUpContent,
+  formatLineBreaks,
+  getFileNameFromUrl,
+  validateUserPermissions,
+} from './helper'
 import { parseSendTime } from './helper'
-
-type ScheduleCommandContext = CommandContext<
-  {
-    Bindings: BaseBindings
-  } & {
-    Variables?:
-      | ({
-          destination_channel: string
-        } & {
-          title: string
-        } & {
-          content: string
-        } & {
-          send_time: string
-        } & Partial<{
-            image_attachment: string
-          }> &
-          Partial<{
-            image_url: string
-          }> &
-          Partial<{
-            suppress_embeds: boolean
-          }>)
-      | undefined
-  }
->
 
 type FlagsArray = ['EPHEMERAL'] | ['EPHEMERAL', 'SUPPRESS_EMBEDS']
 
@@ -113,11 +90,8 @@ const handleNew = async (c: ScheduleCommandContext) => {
       .res('❌ Unable to determine user sending the command.')
   }
 
-  if (
-    !isAdmin(c.interaction.member?.permissions) &&
-    !isTeamMember(c.interaction.member?.roles)
-  ) {
-    console.log(
+  if (!validateUserPermissions(c.interaction)) {
+    console.error(
       `User ${userId} does not have the permissions to use the schedule command.`,
     )
     return c.res('Goose Bot denies you.')
@@ -231,6 +205,13 @@ const handleList = async (c: ScheduleCommandContext) => {
     return c
       .flags('EPHEMERAL')
       .res('❌ Unable to determine user sending the command.')
+  }
+
+  if (!validateUserPermissions(c.interaction)) {
+    console.error(
+      `User ${userId} does not have the permissions to use the schedule command.`,
+    )
+    return c.res('Goose Bot denies you.')
   }
 
   const { results } = await c.env.DB.prepare(

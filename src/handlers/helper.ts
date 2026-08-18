@@ -1,4 +1,7 @@
+import type { APIApplicationCommandInteraction } from 'discord-api-types/v10'
 import { DateTime } from 'luxon'
+
+import { isAdmin, isTeamMember } from '../util'
 
 /**
  * Cleans up the input from the content option by removing actual line breaks.
@@ -71,4 +74,21 @@ export const parseSendTime = (input: string): DateTime | null => {
   }
 
   return date.isValid ? date : null
+}
+
+/**
+ * Check if the user has the valid permissions.
+ * @param interaction Discord interaction
+ * @returns True when the user does have valid permissions, false otherwise
+ */
+export const validateUserPermissions = (
+  interaction: APIApplicationCommandInteraction,
+) => {
+  if (
+    !isAdmin(interaction.member?.permissions) &&
+    !isTeamMember(interaction.member?.roles)
+  ) {
+    return false
+  }
+  return true
 }

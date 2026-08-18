@@ -1,4 +1,37 @@
+import type { CommandContext } from 'discord-hono'
+
 export type BaseBindings = CloudflareBindings & { DB: D1Database }
+
+export interface MessageData {
+  content: string
+  flags?: number
+}
+
+export type ScheduleCommandContext = CommandContext<
+  {
+    Bindings: BaseBindings
+  } & {
+    Variables?:
+      | ({
+          destination_channel: string
+        } & {
+          title: string
+        } & {
+          content: string
+        } & {
+          send_time: string
+        } & Partial<{
+            image_attachment: string
+          }> &
+          Partial<{
+            image_url: string
+          }> &
+          Partial<{
+            suppress_embeds: boolean
+          }>)
+      | undefined
+  }
+>
 
 export interface ScheduledMessage {
   id: number
