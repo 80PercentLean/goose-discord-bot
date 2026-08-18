@@ -123,14 +123,15 @@ const handleNew = async (c: ScheduleCommandContext) => {
   } = c.var
 
   const contentCleaned = cleanUpContent(content)
-  if (contentCleaned.length > 2000) {
+  const contentTrueLength = formatLineBreaks(contentCleaned).length
+  if (contentTrueLength > 2000) {
     console.error(
-      `The cleaned message ended up being ${contentCleaned.length} characters long. Please reduce the message to be at most 2000 characters.`,
+      `The cleaned message ended up being ${contentTrueLength} characters long. Please reduce the message to be at most 2000 characters.`,
     )
     return c
       .flags('EPHEMERAL')
       .res(
-        `❌ The cleaned message ended up being ${contentCleaned.length} characters long. Please reduce the message to be at most 2000 characters.`,
+        `❌ The cleaned message ended up being ${contentTrueLength} characters long. Please reduce the message to be at most 2000 characters.`,
       )
   }
 
@@ -198,7 +199,7 @@ const handleNew = async (c: ScheduleCommandContext) => {
       new Button('schedule-confirm', ['✅', 'Confirm'], 'Success').custom_value(
         String(result.id),
       ),
-      new Button('schedule-cancel', ['❌', 'Cancel'], 'Danger').custom_value(
+      new Button('schedule-cancel', ['🗑️', 'Cancel'], 'Danger').custom_value(
         String(result.id),
       ),
     ),
@@ -283,7 +284,10 @@ export const component_schedule_confirm = factory.component(
     const id = Number(c.ref.custom_value)
 
     if (!Number.isInteger(id)) {
-      return c.update().res('Confirm encountered invalid scheduled message ID.')
+      console.error('Confirm encountered invalid scheduled message ID')
+      return c
+        .update()
+        .res('❌ Confirm encountered invalid scheduled message ID.')
     }
 
     const result = await c.env.DB.prepare(
@@ -321,7 +325,7 @@ export const component_schedule_confirm = factory.component(
       return c
         .update()
         .res(
-          'A problem occurred and this scheduled message draft was not set to pending.',
+          '❌ A problem occurred and this scheduled message draft was not set to pending.',
         )
     }
 
@@ -358,7 +362,10 @@ export const component_schedule_cancel = factory.component(
     const id = Number(c.ref.custom_value)
 
     if (!Number.isInteger(id)) {
-      return c.update().res('Cancel encountered invalid scheduled message ID.')
+      console.error('Cancel encountered invalid scheduled message ID.')
+      return c
+        .update()
+        .res('❌ Cancel encountered invalid scheduled message ID.')
     }
 
     const result = await c.env.DB.prepare(
@@ -372,17 +379,19 @@ export const component_schedule_cancel = factory.component(
       .run()
 
     if (!result.meta.changes) {
+      console.error(
+        'A problem occurred and this scheduled message draft was not deleted.',
+      )
       return c
         .update()
         .res(
-          'A problem occurred and this scheduled message draft was not deleted.',
+          '❌ A problem occurred and this scheduled message draft was not deleted.',
         )
     }
 
     console.log(`Draft message ${id} deleted.`)
-
     return c.update().res({
-      content: `## ❌ Scheduled message canceled.\n\n` + `**ID:** ${id}`,
+      content: `## 🗑️ Scheduled message canceled.\n\n` + `**ID:** ${id}`,
       components: [],
     })
   },
@@ -397,7 +406,10 @@ export const component_schedule_preview = factory.component(
     const id = Number(c.ref.custom_value)
 
     if (!Number.isInteger(id)) {
-      return c.update().res('Preview encountered invalid scheduled message ID.')
+      console.error('Preview encountered invalid scheduled message ID.')
+      return c
+        .update()
+        .res('❌ Preview encountered invalid scheduled message ID.')
     }
 
     const result = await c.env.DB.prepare(
@@ -418,7 +430,7 @@ export const component_schedule_preview = factory.component(
         'A problem occurred and the scheduled message could not be found.',
       )
       return c
-        .flags('EPHEMERAL')
+        .update()
         .res(
           '❌ A problem occurred and the scheduled message could not be found.',
         )
@@ -454,16 +466,19 @@ export const component_schedule_delete = factory.component(
     const id = Number(c.ref.custom_value)
 
     if (!Number.isInteger(id)) {
-      return c.update().res('Delete encountered invalid scheduled message ID.')
+      console.error('Delete encountered invalid scheduled message ID.')
+      return c
+        .update()
+        .res('❌ Delete encountered invalid scheduled message ID.')
     }
 
     const result = await c.env.DB.prepare(
       `
-    DELETE FROM scheduled_messages
-    WHERE id = ?
-      AND status = 'pending'
-    RETURNING created_by, channel_id, title, send_time, status
-  `,
+      DELETE FROM scheduled_messages
+      WHERE id = ?
+        AND status = 'pending'
+      RETURNING created_by, channel_id, title, send_time, status
+    `,
     )
       .bind(id)
       .first<{
@@ -475,11 +490,19 @@ export const component_schedule_delete = factory.component(
       }>()
 
     if (!result) {
+      console.error(
+        'A problem occurred and the scheduled message could not be deleted.',
+      )
       return c
         .update()
-        .res(
-          'A problem occurred and the scheduled message could not be deleted.',
-        )
+        .flags('IS_COMPONENTS_V2')
+        .res({
+          components: [
+            new Content(
+              '❌ A problem occurred and the scheduled message could not be deleted.',
+            ),
+          ],
+        })
     }
 
     return c
