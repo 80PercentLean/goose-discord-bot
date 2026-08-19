@@ -1,4 +1,5 @@
 export * from './forceEdit'
+export * from './github'
 export * from './hello'
 export * from './help'
 export * from './honk'

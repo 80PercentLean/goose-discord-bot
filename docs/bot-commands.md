@@ -197,3 +197,7 @@ This is optional and when set to true will suppress embeds from being generated.
 # `/help`
 
 This will post a link to this document. You're already here reading it, so you probably don't need to run this command.
+
+# `/github`
+
+This will post a link to this GitHub repository. You're also already here, so you probably don't need to run this command.
