@@ -36,7 +36,7 @@ export const command_schedule = factory.command(
     ).options(
       new Option(
         'destination_channel',
-        'Channel or thread to send the message in',
+        'Channel to send the message in',
         'Channel',
       )
         .channel_types()
@@ -345,15 +345,16 @@ const handleUpdate = async (c: ScheduleCommandContext) => {
       )
   }
 
+  // Find Discord message in scheduled message history
   const result = await c.env.DB.prepare(
     `
-    SELECT *
+    SELECT channel_id
     FROM scheduled_messages
     WHERE discord_id = ?
   `,
   )
     .bind(discordId)
-    .first<ScheduledMessage>()
+    .first<{ channel_id: ScheduledMessage['channel_id'] }>()
 
   if (!result) {
     console.error(
@@ -364,13 +365,6 @@ const handleUpdate = async (c: ScheduleCommandContext) => {
       .res(
         '❌ A problem occurred and the sent scheduled message could not be found.',
       )
-  }
-
-  if (!result.discord_id) {
-    console.error('Encountered an invalid Discord message ID.')
-    return c
-      .flags('EPHEMERAL')
-      .res('❌ Encountered an invalid Discord message ID.')
   }
 
   try {
@@ -422,7 +416,7 @@ const handleUpdate = async (c: ScheduleCommandContext) => {
     const messageRes = await c.rest(
       'PATCH',
       '/channels/{channel.id}/messages/{message.id}',
-      [result.channel_id, result.discord_id],
+      [result.channel_id, discordId],
       data,
       img,
     )
@@ -437,6 +431,9 @@ const handleUpdate = async (c: ScheduleCommandContext) => {
     const errLog = err instanceof Error ? err.message : String(err)
     console.error(errMsg)
     console.error(errLog)
+    return c
+      .flags('EPHEMERAL')
+      .res(`❌ Encountered an error while updating the sent scheduled message.`)
   }
 
   console.log(`Sent scheduled message ${discordId} was updated.`)
@@ -444,7 +441,7 @@ const handleUpdate = async (c: ScheduleCommandContext) => {
   // Send public message back to commander to record update
   const messageUrl =
     `https://discord.com/channels/` +
-    `${c.env.DISCORD_TEST_GUILD_ID}/${result.channel_id}/${result.discord_id}`
+    `${c.env.DISCORD_TEST_GUILD_ID}/${result.channel_id}/${discordId}`
   return c.res(
     `<@${userId}> updated sent scheduled message [${discordId}](${messageUrl}).`,
   )
@@ -487,7 +484,7 @@ export const component_schedule_confirm = factory.component(
         'A problem occurred and this scheduled message draft may not have been set to pending.',
       )
       return c
-        .flags('EPHEMERAL')
+        .update()
         .res(
           '❌ A problem occurred and this scheduled message draft may not have been set to pending.',
         )
@@ -589,7 +586,7 @@ export const component_schedule_preview = factory.component(
 
     const result = await c.env.DB.prepare(
       `
-          SELECT *
+          SELECT content, image_url, suppress_embeds
           FROM scheduled_messages
           WHERE id = ?;
         `,

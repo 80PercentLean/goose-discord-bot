@@ -13,7 +13,7 @@ const commands = [
     ).options(
       new Option(
         'destination_channel',
-        'Channel or thread to send the message in',
+        'Channel to send the message in',
         'Channel',
       )
         .channel_types()
@@ -59,12 +59,33 @@ const commands = [
     ),
   ),
   new Command(
+    'force_edit',
+    'Force edit any existing Goose Bot message.',
+  ).options(
+    new Option(
+      'channel_id',
+      'ID of the channel where the message is in',
+    ).required(),
+    new Option(
+      'discord_id',
+      "Discord message ID - not to be confused with Goose Bot's message ID!",
+    ).required(),
+    new Option(
+      'content',
+      'Message content - you can type "<br>" or "\\n" to insert a line break (2000 character limit)',
+    ).required(),
+    new Option('image_attachment', 'Optional image attachment', 'Attachment'),
+    new Option('image_url', 'Optional image URL'),
+    new Option('suppress_embeds', 'Do not include embeds when true', 'Boolean'),
+    new Option('remove_image', 'Remove an existing image', 'Boolean'),
+  ),
+  new Command(
     'puppet',
     'Control Goose Bot to say something instantly.',
   ).options(
     new Option(
       'destination_channel',
-      'Channel or thread to send the message in',
+      'Channel to send the message in',
       'Channel',
     )
       .channel_types()
