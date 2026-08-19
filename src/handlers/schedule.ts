@@ -646,7 +646,12 @@ export const component_schedule_delete = factory.component(
       console.error('Delete encountered invalid scheduled message ID.')
       return c
         .update()
-        .res('❌ Delete encountered invalid scheduled message ID.')
+        .flags('IS_COMPONENTS_V2')
+        .res({
+          components: [
+            new Content('❌ Delete encountered invalid scheduled message ID.'),
+          ],
+        })
     }
 
     const result = await c.env.DB.prepare(

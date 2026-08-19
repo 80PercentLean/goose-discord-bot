@@ -1,10 +1,10 @@
 import { Command, Option, SubCommand, register } from 'discord-hono'
 
 const commands = [
-  new Command('hello', 'Hello, World!').options(
+  new Command('hello', 'Attempt to get Goose Bot to notice you.').options(
     new Option('name', 'Your name'),
   ),
-  new Command('help', 'Docs URL'),
+  new Command('help', 'Learn about the bot commands.'),
   new Command('honk', 'Check on Goose Bot.'),
   new Command('schedule', 'Manage scheduled messages.').options(
     new SubCommand(

@@ -1,8 +1,13 @@
 # Goose Discord Bot
 
-This project is a [Discord bot](https://docs.discord.com/developers/bots/overview) built for the [Cupertino PoGO](https://tinyurl.com/CupertinoPogo) and [Wild Goose](https://campfire.onelink.me/eBr8?af_dp=campfire://&af_force_deeplink=true&deep_link_sub1=cj1jbHVicyZjPWE4M2FmMzljLTRiNTgtNGM2NC1iZjViLTYwMTM4Yzc2MzNjNyZpPXRydWU=) groups.
+This project is a [Discord bot](https://docs.discord.com/developers/bots/overview) built for the [Cupertino PoGO](https://www.cupertinopogo.com) and [Wild Goose](https://www.wildgoosepogo.com) groups.
 
-It also provides a REST API that exposes the community Discord server data for use by the [Cupertino PoGO Map project](https://github.com/80PercentLean/cupertino-pogo-map).
+Some notable features are:
+
+- Provides a REST API that exposes the Discord server's event data so it can be used for the meetups view in the [Cupertino PoGO Map project](https://github.com/80PercentLean/cupertino-pogo-map).
+- Provides a message scheduling commands that allow the bot to send messages for announcements and reminders in the future.
+- The bot runs on Cloudflare Workers, so it operates on a serverless, edge-computing platform.
+- Completely open source!
 
 ## Quick Start
 
@@ -16,11 +21,12 @@ npm install
 
 Rename [`.env.example`](./env.example) to `.env` and set the following environment variables:
 
-- DISCORD_APPLICATION_ID
-- DISCORD_PUBLIC_KEY
-- DISCORD_TOKEN
+- `DISCORD_APPLICATION_ID`
+- `DISCORD_PUBLIC_KEY`
+- `DISCORD_TOKEN`
+- `DISCORD_TEST_GUILD_ID`
 
-Optionally, set `DISCORD_TEST_GUILD_ID` to register commands to a specific Discord server. Without this, commands will be registered globally which can take some time to reflect your changes, so if you want to register commands immediately, set this to a Discord server you are testing on.
+It is important to set `DISCORD_TEST_GUILD_ID` so the register script will configure the commands to a specific Discord server. Global and guild commands are different, and these commands were built with the intention of being guild-specific, so we don't recommend register globally. `DISCORD_TEST_GUILD_ID` is also required for the `force_edit` command to work.
 
 You can also optionally set `API_KEY` to secure the API.
 
@@ -48,12 +54,22 @@ npm run register
 npm run deploy
 ```
 
+## Other Resources
+
+- [Motivation](./docs/motivation.md)
+- [Discord Bot Commands](./docs/bot-commands.md)
+- [Contributing](./docs/contributing.md)
+- [Working With Tests](./docs/testing.md)
+
 ## Technology Overview
 
 - [TypeScript](https://www.typescriptlang.org): Main language used for its type safety
 - [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript): Language used for some scripts & configuration files
+- [Cloudflare Workers](https://cloudflare.com/products/workers): Serverless edge computing platform used to host the Discord bot and REST API
 - [Discord Hono](https://discord-hono.luis.fun): Library for building Discord bots on Cloudflare Workers
 - [Hono](https://hono.dev): Web application framework that supports Cloudflare Workers
+- [Cloudflare D1](https://developers.cloudflare.com/d1): Serverless database used for persisting data
+- [Cloudflare Workers KV](https://developers.cloudflare.com/kv): Key-value data storage used for caching Discord API responses
 - [Luxon](https://moment.github.io/luxon): Library for dealing with dates and times
 - [EJS](https://ejs.co): Templating language used to generate HTML
 - [Vitest](https://vitest.dev): Framework for unit testing
@@ -67,3 +83,7 @@ npm run deploy
 ```shell
 npm run cf-typegen
 ```
+
+## License
+
+Goose Discord Bot is open source software licensed as [MIT](./LICENSE).

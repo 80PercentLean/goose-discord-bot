@@ -1,7 +1,7 @@
 {
   "name": "goose-discord-bot",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "author": "80PercentLean",
   "type": "module",
   "scripts": {
@@ -19,6 +19,7 @@
     "register": "tsc && node --env-file=.env dist/register.js",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:dev": "npm run test -- --ui",
     "test:watch": "npm run test watch",
     "typecheck": "tsc -b"
   },
