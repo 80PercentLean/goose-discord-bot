@@ -212,6 +212,9 @@ const handleNew = async (c: ScheduleCommandContext) => {
       new Button('schedule-preview', ['🔍', 'Preview'], 'Primary').custom_value(
         String(result.id),
       ),
+      new Button('schedule-copy', ['📋', 'Copy'], 'Primary').custom_value(
+        String(result.id),
+      ),
       new Button('schedule-confirm', ['✅', 'Confirm'], 'Success').custom_value(
         String(result.id),
       ),
@@ -288,6 +291,9 @@ const handleList = async (c: ScheduleCommandContext) => {
               ['🔍', 'Preview'],
               'Primary',
             ).custom_value(String(msg.id)),
+            new Button('schedule-copy', ['📋', 'Copy'], 'Primary').custom_value(
+              String(msg.id),
+            ),
             new Button(
               'schedule-delete',
               ['🗑️', 'Delete'],
@@ -628,6 +634,67 @@ export const component_schedule_preview = factory.component(
     return c.flags(...flags).res(
       {
         content: contentFormatted,
+      },
+      img,
+    )
+  },
+)
+
+/**
+ * Copy button handler
+ */
+export const component_schedule_copy = factory.component(
+  new Button('schedule-copy', 'Copy Message'),
+  async (c) => {
+    const id = Number(c.ref.custom_value)
+
+    if (!Number.isInteger(id)) {
+      console.error('Copy encountered invalid scheduled message ID.')
+      return c.update().res('❌ Copy encountered invalid scheduled message ID.')
+    }
+
+    const result = await c.env.DB.prepare(
+      `
+          SELECT content, image_url, suppress_embeds
+          FROM scheduled_messages
+          WHERE id = ?;
+        `,
+    )
+      .bind(id)
+      .first<{
+        content: ScheduledMessage['content']
+        image_url: ScheduledMessage['image_url']
+        suppress_embeds: ScheduledMessage['suppress_embeds']
+      }>()
+
+    if (!result) {
+      console.error(
+        'A problem occurred and the scheduled message could not be found.',
+      )
+      return c
+        .update()
+        .res(
+          '❌ A problem occurred and the scheduled message could not be found.',
+        )
+    }
+
+    let img
+    if (result.image_url) {
+      const blob = await fetch(result.image_url).then((res) => res.blob())
+      img = {
+        blob,
+        name: getFileNameFromUrl(result.image_url),
+      }
+    }
+
+    const flags: FlagsArray = result.suppress_embeds
+      ? ['EPHEMERAL', 'SUPPRESS_EMBEDS']
+      : ['EPHEMERAL']
+
+    console.log(`Previewed message ${id}.`)
+    return c.flags(...flags).res(
+      {
+        content: `\`\`\`${result.content}\`\`\``,
       },
       img,
     )

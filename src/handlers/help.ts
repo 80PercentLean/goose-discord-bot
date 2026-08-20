@@ -12,7 +12,7 @@ export const command_help = factory.command(
       components: new Components().row(
         new Button(
           'https://github.com/80PercentLean/goose-discord-bot/blob/main/docs/bot-commands.md',
-          ['📑', 'Bot Command GitHub Documentation'],
+          ['📑', 'Bot Command Documentation'],
           'Link',
         ),
       ),
