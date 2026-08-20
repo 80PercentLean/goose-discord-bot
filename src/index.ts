@@ -112,13 +112,13 @@ export default {
             ...results.map((msg) => {
               return new Layout('Container').components(
                 new Content(
-                  `**ID:** ${msg.id}\n` +
-                    `**Title:** ${msg.title}\n` +
-                    `**Channel:** <#${msg.channel_id}>\n` +
-                    `**Send Time:** ${DateTime.fromSeconds(msg.send_time, {
+                  `**${msg.title}**\n` +
+                    `- **Send Time:** ${DateTime.fromSeconds(msg.send_time, {
                       zone: 'America/Los_Angeles',
-                    }).toFormat('M/d/yyyy h:mm a ZZZZ')}\n` +
-                    `**Author:** <@${msg.created_by}>`,
+                    }).toFormat('ccc M/d h:mm a ZZZZ')}\n` +
+                    `- **Channel:** <#${msg.channel_id}>\n` +
+                    `- **Author:** <@${msg.created_by}>\n` +
+                    `- **ID:** ${msg.id}`,
                 ),
 
                 new Layout('Action Row').components(
