@@ -212,6 +212,8 @@ export default {
         // Send the scheduled message
         const data: MessageData = {
           content: formatLineBreaks(content),
+          nonce: `sched-${id}`,
+          enforce_nonce: true,
         }
         if (suppressEmbeds) {
           data.flags = 4
