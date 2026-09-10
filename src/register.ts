@@ -1,6 +1,9 @@
 import { Command, Option, SubCommand, register } from 'discord-hono'
 
+import { command_namecolor } from './handlers/namecolor'
+
 const commands = [
+  command_namecolor.command,
   new Command(
     'force_edit',
     'Force edit any existing Goose Bot message.',
