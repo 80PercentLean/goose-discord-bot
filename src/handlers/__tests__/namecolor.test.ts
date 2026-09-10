@@ -1,5 +1,3 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import { COLOR_ROLES, command_namecolor } from '../namecolor'
 
 describe('command_namecolor', () => {

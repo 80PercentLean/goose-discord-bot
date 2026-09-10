@@ -8,7 +8,7 @@
     /* Modules */
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "types": ["./worker-configuration.d.ts", "node"],
+    "types": ["./worker-configuration.d.ts", "node", "vitest/globals"],
     "jsxImportSource": "hono/jsx",
     "resolveJsonModule": true,
     /* JavaScript Support */
