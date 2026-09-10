@@ -5,7 +5,9 @@ export type BaseBindings = CloudflareBindings & { DB: D1Database }
 export interface MessageData {
   attachments?: { id: string; filename: string }[]
   content: string
+  enforce_nonce?: boolean
   flags?: number
+  nonce?: string
 }
 
 export type ScheduleCommandContext = CommandContext<

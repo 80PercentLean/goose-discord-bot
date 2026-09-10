@@ -79,15 +79,18 @@ events.get('/', async (c) => {
       if (d.entity_metadata?.location) {
         const location = d.entity_metadata?.location?.toLowerCase()
 
+        // if (
+        //   d.name.toLowerCase().includes('go fest 2026 saturday') ||
+        //   d.name.toLowerCase().includes('go fest 2026 sunday')
+        // ) {
+        //   dataWg.push(d)
+        //   dataCupPogo.push(d)
+        // }
+
         if (
-          d.name.toLowerCase().includes('go fest 2026 saturday') ||
-          d.name.toLowerCase().includes('go fest 2026 sunday')
-        ) {
-          dataWg.push(d)
-          dataCupPogo.push(d)
-        } else if (
           location &&
           (location.includes('central park') ||
+            location.includes('community recreation center') ||
             location.includes('pavilion') ||
             location.includes('santa clara'))
         ) {
@@ -108,6 +111,9 @@ events.get('/', async (c) => {
           dataWg.push(d)
           dataCupPogo.push(d)
         }
+
+        dataWg.push(d)
+        dataCupPogo.push(d)
       }
     }
 
