@@ -77,37 +77,40 @@ events.get('/', async (c) => {
 
     for (const d of dataAll) {
       if (d.entity_metadata?.location) {
-        //   const location = d.entity_metadata?.location?.toLowerCase()
-        //
-        //   if (
-        //     d.name.toLowerCase().includes('go fest 2026 saturday') ||
-        //     d.name.toLowerCase().includes('go fest 2026 sunday')
-        //   ) {
-        //     dataWg.push(d)
-        //     dataCupPogo.push(d)
-        //   } else if (
-        //     location &&
-        //     (location.includes('central park') ||
-        //       location.includes('pavilion') ||
-        //       location.includes('santa clara'))
-        //   ) {
-        //     // Location matches Central Park/Santa Clara
-        //     dataWg.push(d)
-        //   } else if (
-        //     location &&
-        //     (location.includes('cupertino') ||
-        //       location.includes('de anza college') ||
-        //       location.includes('hinson') ||
-        //       location.includes('memorial park') ||
-        //       location.includes('quinlan'))
-        //   ) {
-        //     // Location matches Memorial Park/De Anza College
-        //     dataCupPogo.push(d)
-        //   } else {
-        //     // Location is unknown, so just store in both
-        //     dataWg.push(d)
-        //     dataCupPogo.push(d)
-        //   }
+        const location = d.entity_metadata?.location?.toLowerCase()
+
+        // if (
+        //   d.name.toLowerCase().includes('go fest 2026 saturday') ||
+        //   d.name.toLowerCase().includes('go fest 2026 sunday')
+        // ) {
+        //   dataWg.push(d)
+        //   dataCupPogo.push(d)
+        // }
+
+        if (
+          location &&
+          (location.includes('central park') ||
+            location.includes('community recreation center') ||
+            location.includes('pavilion') ||
+            location.includes('santa clara'))
+        ) {
+          // Location matches Central Park/Santa Clara
+          dataWg.push(d)
+        } else if (
+          location &&
+          (location.includes('cupertino') ||
+            location.includes('de anza college') ||
+            location.includes('hinson') ||
+            location.includes('memorial park') ||
+            location.includes('quinlan'))
+        ) {
+          // Location matches Memorial Park/De Anza College
+          dataCupPogo.push(d)
+        } else {
+          // Location is unknown, so just store in both
+          dataWg.push(d)
+          dataCupPogo.push(d)
+        }
 
         dataWg.push(d)
         dataCupPogo.push(d)
