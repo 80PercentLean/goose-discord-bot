@@ -111,9 +111,6 @@ events.get('/', async (c) => {
           dataWg.push(d)
           dataCupPogo.push(d)
         }
-
-        dataWg.push(d)
-        dataCupPogo.push(d)
       }
     }
 
