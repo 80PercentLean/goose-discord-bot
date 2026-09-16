@@ -2,6 +2,12 @@ import type { CommandContext } from 'discord-hono'
 
 export type BaseBindings = CloudflareBindings & { DB: D1Database }
 
+export type HonoBindings = BaseBindings & {
+  CORS_ORIGIN: string
+  DISCORD_TOKEN: string
+  DISCORD_TEST_GUILD_ID: string
+}
+
 export interface MessageData {
   attachments?: { id: string; filename: string }[]
   content: string
