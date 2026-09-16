@@ -42,7 +42,7 @@ export default {
     const now = DateTime.now().setZone('America/Los_Angeles')
     const rest = createRest(env.DISCORD_TOKEN)
 
-    sendWeeklySummary(env, rest, now)
-    processScheduledMessages(env, rest, now)
+    await sendWeeklySummary(env, rest, now)
+    await processScheduledMessages(env, rest, now)
   },
 }
