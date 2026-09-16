@@ -42,7 +42,17 @@ export default {
     const now = DateTime.now().setZone('America/Los_Angeles')
     const rest = createRest(env.DISCORD_TOKEN)
 
-    await sendWeeklySummary(env, rest, now)
-    await processScheduledMessages(env, rest, now)
+    switch (controller.cron) {
+      case '* * * * *':
+        await processScheduledMessages(env, rest, now)
+        break
+
+      case '0 4 * * 1':
+        await sendWeeklySummary(env, rest, now)
+        break
+
+      default:
+        console.warn(`Unknown cron trigger encountered: ${controller.cron}`)
+    }
   },
 }
