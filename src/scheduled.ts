@@ -222,18 +222,17 @@ export const sendWeeklySummary = async (
   rest: ReturnType<typeof createRest>,
   now: DateTime,
 ) => {
-  if (now.weekday === 7 && now.hour === 21 && now.minute === 0) {
-    // Send next week's upcoming scheduled message report
-    try {
-      console.log("Showing next week's scheduled message report.")
+  // Send next week's upcoming scheduled message report
+  try {
+    console.log("Showing next week's scheduled message report.")
 
-      const weekStart = now.plus({ days: 1 }).startOf('day')
+    const weekStart = now.plus({ days: 1 }).startOf('day')
 
-      const weekEnd = weekStart.plus({ days: 7 })
+    const weekEnd = weekStart.plus({ days: 7 })
 
-      // Retrieve the pending messages from the database
-      const { results } = await env.DB.prepare(
-        `
+    // Retrieve the pending messages from the database
+    const { results } = await env.DB.prepare(
+      `
                 SELECT id, created_by, title, channel_id, send_time
                 FROM scheduled_messages
                 WHERE status = 'pending'
@@ -241,65 +240,64 @@ export const sendWeeklySummary = async (
                   AND send_time < ?
                 ORDER BY send_time ASC
               `,
+    )
+      .bind(weekStart.toUnixInteger(), weekEnd.toUnixInteger())
+      .all<{
+        id: ScheduledMessage['id']
+        created_by: ScheduledMessage['created_by']
+        channel_id: ScheduledMessage['channel_id']
+        title: ScheduledMessage['title']
+        send_time: ScheduledMessage['send_time']
+      }>()
+
+    const timeFrame = `(${weekStart.toFormat('ccc M/d')} - ${weekEnd.minus({ days: 1 }).toFormat('ccc M/d')})`
+
+    if (results.length === 0) {
+      // No pending scheduled messages were found
+      await rest(
+        'POST',
+        $channels$_$messages,
+        [MSG_SCHEDULER_CH_ID],
+        `## Upcoming Scheduled Messages ${timeFrame}\nNothing is scheduled for the next 7 days. Make sure that's right and that nothing actually needs to go out!`,
       )
-        .bind(weekStart.toUnixInteger(), weekEnd.toUnixInteger())
-        .all<{
-          id: ScheduledMessage['id']
-          created_by: ScheduledMessage['created_by']
-          channel_id: ScheduledMessage['channel_id']
-          title: ScheduledMessage['title']
-          send_time: ScheduledMessage['send_time']
-        }>()
-
-      const timeFrame = `(${weekStart.toFormat('ccc M/d')} - ${weekEnd.minus({ days: 1 }).toFormat('ccc M/d')})`
-
-      if (results.length === 0) {
-        // No pending scheduled messages were found
-        await rest(
-          'POST',
-          $channels$_$messages,
-          [MSG_SCHEDULER_CH_ID],
-          `## Upcoming Scheduled Messages ${timeFrame}\nNothing is scheduled for the next 7 days. Make sure that's right and that nothing actually needs to go out!`,
-        )
-        return
-      }
-
-      // Pending scheduled messages were found
-      await rest('POST', $channels$_$messages, [MSG_SCHEDULER_CH_ID], {
-        flags: 32768,
-        components: [
-          new Content(`## Upcoming Scheduled Messages ${timeFrame}`),
-
-          ...results.map((msg) => {
-            return new Layout('Container').components(
-              new Content(
-                `**${msg.title}**\n` +
-                  `- **Send Time:** ${DateTime.fromSeconds(msg.send_time, {
-                    zone: 'America/Los_Angeles',
-                  }).toFormat('ccc M/d h:mm a ZZZZ')}\n` +
-                  `- **Channel:** <#${msg.channel_id}>\n` +
-                  `- **Author:** <@${msg.created_by}>\n` +
-                  `- **ID:** ${msg.id}`,
-              ),
-
-              new Layout('Action Row').components(
-                new Button(
-                  'schedule-preview',
-                  ['🔍', 'Preview'],
-                  'Primary',
-                ).custom_value(String(msg.id)),
-              ),
-            )
-          }),
-        ],
-      })
-    } catch (err) {
-      // An error occurred while sending next week's upcoming scheduled message report
-      // so silently fail and continue on sending scheduled messages if there are any
-      console.error(
-        "An error occurred while sending next week's upcoming scheduled message report.",
-      )
-      console.error(err)
+      return
     }
+
+    // Pending scheduled messages were found
+    await rest('POST', $channels$_$messages, [MSG_SCHEDULER_CH_ID], {
+      flags: 32768,
+      components: [
+        new Content(`## Upcoming Scheduled Messages ${timeFrame}`),
+
+        ...results.map((msg) => {
+          return new Layout('Container').components(
+            new Content(
+              `**${msg.title}**\n` +
+                `- **Send Time:** ${DateTime.fromSeconds(msg.send_time, {
+                  zone: 'America/Los_Angeles',
+                }).toFormat('ccc M/d h:mm a ZZZZ')}\n` +
+                `- **Channel:** <#${msg.channel_id}>\n` +
+                `- **Author:** <@${msg.created_by}>\n` +
+                `- **ID:** ${msg.id}`,
+            ),
+
+            new Layout('Action Row').components(
+              new Button(
+                'schedule-preview',
+                ['🔍', 'Preview'],
+                'Primary',
+              ).custom_value(String(msg.id)),
+            ),
+          )
+        }),
+      ],
+    })
+  } catch (err) {
+    // An error occurred while sending next week's upcoming scheduled message report
+    // so silently fail and continue on sending scheduled messages if there are any
+    console.error(
+      "An error occurred while sending next week's upcoming scheduled message report.",
+    )
+    console.error(err)
   }
 }
