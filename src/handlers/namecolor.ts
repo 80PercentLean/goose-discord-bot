@@ -1,75 +1,120 @@
-import { Command, Option } from 'discord-hono'
+import { Command, Option, type createRest } from 'discord-hono'
 
 import { factory } from '../init'
 
-const SHNUNDO = ['1537764340621647872']
-const LUCKY_SHUNDO = ['1537770325863825509', '1537766667432501259']
-const SHUNDO = [
-  '1547168397534437386',
-  '1537784576171188234',
-  '1537778900971823104',
-  '1537764114791661678',
-]
-const HUNDO = [
-  '1537769003395711056',
-  '1537776493260841000',
-  '1537927355295596585',
-  '1537925368986603623',
-  '1537762918416777267',
-]
-const NUNDO = ['1537763840358621234']
-const SHINY = [
-  '1537767436743606292',
-  '1537929195009867806',
-  '1537924417810858135',
-  '1537761312396939274',
-]
-const LUCKY = ['1537777594194460754']
+type RestClient = ReturnType<typeof createRest>
 
-export const COLOR_ROLES = {
-  '1547480496123027506': {
-    name: 'Shnundo Name',
-    requires: [...SHNUNDO],
-  },
-  '1547480746908975165': {
-    name: 'Shundo Name',
-    requires: [...LUCKY_SHUNDO, ...SHUNDO],
-  },
-  '1547480041292828682': {
-    name: 'Hundo Name',
-    requires: [...LUCKY_SHUNDO, ...SHUNDO, ...HUNDO],
-  },
-  '1547480233417121842': {
-    name: 'Nundo Name',
-    requires: [...SHNUNDO, ...NUNDO],
-  },
-  '1547479551242928158': {
-    name: 'Shiny Name',
-    requires: [...LUCKY_SHUNDO, ...SHUNDO, ...SHNUNDO, ...SHINY],
-  },
-  '1547479162879610920': {
-    name: 'Lucky Name',
-    requires: [...LUCKY_SHUNDO, ...LUCKY],
-  },
-} as const
+export interface DiscordRole {
+  id: string
+  name: string
+  color: number
+  position: number
+  colors?: {
+    primary_color?: number | null
+    secondary_color?: number | null
+    tertiary_color?: number | null
+  }
+}
+
+const roleCache = new Map<string, { roles: DiscordRole[]; expires: number }>()
+
+const toHex = (n: number) => `#${n.toString(16).padStart(6, '0').toUpperCase()}`
+
+export const getRoleColors = (role: DiscordRole): number[] => {
+  if (role.colors?.primary_color) {
+    return [
+      role.colors.primary_color,
+      role.colors.secondary_color,
+      role.colors.tertiary_color,
+    ].filter((c): c is number => typeof c === 'number' && c > 0)
+  }
+  return role.color ? [role.color] : []
+}
+
+export const getRoleColorName = (role: DiscordRole): string => {
+  const colors = getRoleColors(role)
+  return `[Color] ${colors.map(toHex).join(' - ')}`
+}
+
+const getGuildRoles = async (
+  c: { rest: RestClient },
+  guildId: string,
+  bypassCache = false,
+): Promise<DiscordRole[]> => {
+  const now = Date.now()
+  const cached = roleCache.get(guildId)
+  if (!bypassCache && cached && cached.expires > now) {
+    return cached.roles
+  }
+  const res = await c.rest('GET', '/guilds/{guild.id}/roles', [guildId])
+  if (!res.ok) return cached?.roles ?? []
+  const roles = (await res.json()) as DiscordRole[]
+  roleCache.set(guildId, { roles, expires: now + 15_000 })
+  return roles
+}
+
+const cleanupUnusedRole = async (
+  c: { rest: RestClient },
+  guildId: string,
+  roleId: string,
+  excludeUserId?: string,
+) => {
+  const membersRes = await c.rest('GET', '/guilds/{guild.id}/members', [
+    guildId,
+    { limit: 1000 },
+  ])
+  if (!membersRes.ok) return
+  const members = (await membersRes.json()) as {
+    user?: { id: string }
+    roles?: string[]
+  }[]
+  const inUse = members.some(
+    (m) =>
+      m.user?.id !== excludeUserId &&
+      Array.isArray(m.roles) &&
+      m.roles.includes(roleId),
+  )
+  if (!inUse) {
+    await c.rest('DELETE', '/guilds/{guild.id}/roles/{role.id}', [
+      guildId,
+      roleId,
+    ])
+    roleCache.delete(guildId)
+  }
+}
 
 export const command_namecolor = factory.autocomplete(
   new Command('namecolor', 'Set or remove your name color role.').options(
-    new Option('color', 'Name color role').autocomplete().required(),
+    new Option('color', 'Role to copy name color from')
+      .autocomplete()
+      .required(),
   ),
-  (c) => {
+  async (c) => {
+    const guildId = c.interaction.guild_id ?? c.env.DISCORD_TEST_GUILD_ID
     const userRoles = c.interaction.member?.roles ?? []
     const query = (c.focused?.value as string)?.toLowerCase() ?? ''
+
+    if (!guildId) {
+      return c.resAutocomplete({ choices: [{ name: 'None', value: 'none' }] })
+    }
+
+    const allRoles = await getGuildRoles(c, guildId)
+    const userColorRoles = allRoles.filter(
+      (r) =>
+        userRoles.includes(r.id) &&
+        !r.name.startsWith('[Color] ') &&
+        getRoleColors(r).length > 0,
+    )
+
     const choices = [
       { name: 'None', value: 'none' },
-      ...Object.entries(COLOR_ROLES)
-        .filter(([_, { requires }]) =>
-          requires.some((id) => userRoles.includes(id)),
-        )
-        .map(([value, { name }]) => ({ name, value })),
+      ...userColorRoles.map((r) => ({
+        name: r.name,
+        value: r.id,
+      })),
     ].filter(({ name }) => name.toLowerCase().includes(query))
 
-    return c.resAutocomplete({ choices })
+    return c.resAutocomplete({ choices: choices.slice(0, 25) })
   },
   async (c) => {
     const guildId = c.interaction.guild_id ?? c.env.DISCORD_TEST_GUILD_ID
@@ -80,66 +125,116 @@ export const command_namecolor = factory.autocomplete(
       return c.flags('EPHEMERAL').res('Failed to identify user or server.')
     }
 
-    const selected = c.var.color as keyof typeof COLOR_ROLES | 'none'
-    const rolesToRemove = Object.keys(COLOR_ROLES).filter(
-      (id) => userRoles.includes(id) && id !== selected,
+    const allRoles = await getGuildRoles(c, guildId, true)
+    const userColorRoles = allRoles.filter(
+      (r) => r.name.startsWith('[Color] ') && userRoles.includes(r.id),
     )
 
-    if (selected === 'none') {
-      if (rolesToRemove.length === 0) {
+    const selectedRoleId = c.var.color
+
+    if (!selectedRoleId || selectedRoleId === 'none') {
+      if (userColorRoles.length === 0) {
         return c.flags('EPHEMERAL').res("You don't have a name color role set.")
       }
-      await Promise.all(
-        rolesToRemove.map((id) =>
-          c.rest(
-            'DELETE',
-            '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
-            [guildId, userId, id],
-          ),
-        ),
-      )
+      for (const role of userColorRoles) {
+        await c.rest(
+          'DELETE',
+          '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
+          [guildId, userId, role.id],
+        )
+        await cleanupUnusedRole(c, guildId, role.id, userId)
+      }
       return c.flags('EPHEMERAL').res('Removed your name color role.')
     }
 
-    const target = COLOR_ROLES[selected]
-    if (!target) {
-      return c.flags('EPHEMERAL').res('Invalid name color role.')
-    }
+    const sourceRole = allRoles.find(
+      (r) =>
+        r.id === selectedRoleId &&
+        userRoles.includes(r.id) &&
+        !r.name.startsWith('[Color] '),
+    )
 
-    if (!target.requires.some((id) => userRoles.includes(id))) {
+    if (!sourceRole) {
       return c
         .flags('EPHEMERAL')
-        .res(
-          "You don't have the required achievement role for this name color.",
-        )
+        .res("You don't have that role or it cannot be used.")
     }
 
-    if (userRoles.includes(selected)) {
+    const colors = getRoleColors(sourceRole)
+    if (colors.length === 0) {
+      return c.flags('EPHEMERAL').res("Selected role doesn't have a color.")
+    }
+
+    const targetRoleName = getRoleColorName(sourceRole)
+
+    if (userColorRoles.some((r) => r.name === targetRoleName)) {
       return c
         .flags('EPHEMERAL')
-        .res(`Your name color is already set to ${target.name}.`)
+        .res('Your name color is already set to this color.')
     }
 
-    await Promise.all(
-      rolesToRemove.map((id) =>
-        c.rest(
+    let targetRole = allRoles.find((r) => r.name === targetRoleName)
+
+    if (!targetRole) {
+      const createBody: Record<string, unknown> = {
+        name: targetRoleName,
+        color: colors[0],
+      }
+      if (sourceRole.colors?.primary_color) {
+        createBody.colors = sourceRole.colors
+      }
+
+      const createRes = await c.rest(
+        'POST',
+        '/guilds/{guild.id}/roles',
+        [guildId],
+        createBody as never,
+      )
+      if (!createRes.ok) {
+        return c.flags('EPHEMERAL').res('Failed to create name color role.')
+      }
+      targetRole = (await createRes.json()) as DiscordRole
+      roleCache.delete(guildId)
+
+      const botMemberRes = await c.rest(
+        'GET',
+        '/guilds/{guild.id}/members/{user.id}',
+        [guildId, c.env.DISCORD_APPLICATION_ID],
+      )
+      if (botMemberRes.ok) {
+        const botMember = (await botMemberRes.json()) as { roles?: string[] }
+        const botRoles = allRoles.filter((r) => botMember.roles?.includes(r.id))
+        const botMaxPos = Math.max(...botRoles.map((r) => r.position), 1)
+        const newPos = Math.max(1, botMaxPos - 1)
+        await c.rest('PATCH', '/guilds/{guild.id}/roles', [guildId], [
+          { id: targetRole.id, position: newPos },
+        ] as never)
+      }
+    }
+
+    for (const oldRole of userColorRoles) {
+      if (oldRole.id !== targetRole.id) {
+        await c.rest(
           'DELETE',
           '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
-          [guildId, userId, id],
-        ),
-      ),
-    )
+          [guildId, userId, oldRole.id],
+        )
+        await cleanupUnusedRole(c, guildId, oldRole.id, userId)
+      }
+    }
 
     const res = await c.rest(
       'PUT',
       '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
-      [guildId, userId, selected],
+      [guildId, userId, targetRole.id],
     )
 
     if (!res.ok) {
       return c.flags('EPHEMERAL').res('Failed to set name color role.')
     }
 
-    return c.flags('EPHEMERAL').res(`Set your name color to ${target.name}.`)
+    return c
+      .flags('EPHEMERAL')
+      .res(`Set your name color to ${sourceRole.name}.`)
   },
 )

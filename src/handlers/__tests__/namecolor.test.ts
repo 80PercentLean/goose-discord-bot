@@ -1,21 +1,112 @@
-import { COLOR_ROLES, command_namecolor } from '../namecolor'
+import { describe, expect, it, vi } from 'vitest'
+
+import {
+  type DiscordRole,
+  command_namecolor,
+  getRoleColorName,
+  getRoleColors,
+} from '../namecolor'
+
+describe('namecolor utilities', () => {
+  it('extracts single color', () => {
+    const role: DiscordRole = {
+      id: '1',
+      name: 'Red',
+      color: 0xff0000,
+      position: 1,
+    }
+    expect(getRoleColors(role)).toEqual([0xff0000])
+    expect(getRoleColorName(role)).toBe('[Color] #FF0000')
+  })
+
+  it('extracts two-stop gradient', () => {
+    const role: DiscordRole = {
+      id: '2',
+      name: 'Bicolor',
+      color: 0xff0000,
+      position: 2,
+      colors: {
+        primary_color: 0xff0000,
+        secondary_color: 0x00ff00,
+      },
+    }
+    expect(getRoleColors(role)).toEqual([0xff0000, 0x00ff00])
+    expect(getRoleColorName(role)).toBe('[Color] #FF0000 - #00FF00')
+  })
+
+  it('extracts three-stop gradient', () => {
+    const role: DiscordRole = {
+      id: '3',
+      name: 'Tricolor',
+      color: 0xa9caff,
+      position: 3,
+      colors: {
+        primary_color: 11127295,
+        secondary_color: 16759788,
+        tertiary_color: 16761760,
+      },
+    }
+    expect(getRoleColors(role)).toEqual([11127295, 16759788, 16761760])
+    expect(getRoleColorName(role)).toBe('[Color] #A9C9FF - #FFBBEC - #FFC3A0')
+  })
+
+  it('returns empty for colorless roles', () => {
+    const role: DiscordRole = {
+      id: '4',
+      name: 'Default',
+      color: 0,
+      position: 0,
+    }
+    expect(getRoleColors(role)).toEqual([])
+  })
+})
 
 describe('command_namecolor', () => {
+  const sampleRoles: DiscordRole[] = [
+    { id: 'bot-role', name: 'Bot', color: 0, position: 50 },
+    { id: 'hundo', name: 'Hundo', color: 0xff0000, position: 20 },
+    { id: 'shundo', name: 'Shundo', color: 0xffff00, position: 25 },
+    {
+      id: 'shundo-bg',
+      name: 'Shundo BG',
+      color: 0xffff00,
+      position: 26,
+    },
+    { id: 'colorless', name: 'Member', color: 0, position: 5 },
+    {
+      id: 'existing-color',
+      name: '[Color] #FF0000',
+      color: 0xff0000,
+      position: 45,
+    },
+  ]
+
   const createMockContext = ({
     color,
     guildId = 'guild-123',
     roles = [],
     userId = 'user-123',
-    restOk = true,
+    allRoles = sampleRoles,
+    members = [],
+    botRoles = ['bot-role'],
   }: {
     color?: string
     guildId?: string
     roles?: string[]
     userId?: string
-    restOk?: boolean
+    allRoles?: DiscordRole[]
+    members?: { user?: { id: string }; roles: string[] }[]
+    botRoles?: string[]
   }) => {
-    const restCalls: { method: string; path: string; vars: unknown[] }[] = []
+    const restCalls: {
+      method: string
+      path: string
+      vars: unknown[]
+      data?: unknown
+    }[] = []
     const resMock = vi.fn((val: string) => val)
+
+    const dynamicRoles = [...allRoles]
 
     const context = {
       interaction: {
@@ -27,6 +118,7 @@ describe('command_namecolor', () => {
       },
       env: {
         DISCORD_TEST_GUILD_ID: 'fallback-guild',
+        DISCORD_APPLICATION_ID: 'bot-id',
       },
       var: {
         color,
@@ -34,227 +126,257 @@ describe('command_namecolor', () => {
       flags: vi.fn(() => ({
         res: resMock,
       })),
-      rest: vi.fn(async (method: string, path: string, vars: unknown[]) => {
-        restCalls.push({ method, path, vars })
-        return { ok: restOk }
-      }),
+      rest: vi.fn(
+        async (
+          method: string,
+          path: string,
+          vars: unknown[],
+          data?: unknown,
+        ) => {
+          restCalls.push({ method, path, vars, data })
+
+          if (method === 'GET' && path === '/guilds/{guild.id}/roles') {
+            return { ok: true, json: async () => dynamicRoles }
+          }
+          if (
+            method === 'GET' &&
+            path === '/guilds/{guild.id}/members/{user.id}'
+          ) {
+            return { ok: true, json: async () => ({ roles: botRoles }) }
+          }
+          if (method === 'GET' && path === '/guilds/{guild.id}/members') {
+            return { ok: true, json: async () => members }
+          }
+          if (method === 'POST' && path === '/guilds/{guild.id}/roles') {
+            const payload = data as Record<string, unknown>
+            const newRole: DiscordRole = {
+              id: `created-${Date.now()}`,
+              name:
+                typeof payload?.name === 'string' ? payload.name : 'New Role',
+              color: typeof payload?.color === 'number' ? payload.color : 0,
+              position: 1,
+              colors: payload?.colors as DiscordRole['colors'],
+            }
+            dynamicRoles.push(newRole)
+            return { ok: true, json: async () => newRole }
+          }
+          return { ok: true, json: async () => ({}) }
+        },
+      ),
     }
 
-    return { context, restCalls, resMock }
+    return { context, restCalls, resMock, dynamicRoles }
   }
 
   const createMockAutocompleteContext = ({
     roles = [],
     query = '',
+    allRoles = sampleRoles,
   }: {
     roles?: string[]
     query?: string
+    allRoles?: DiscordRole[]
   }) => {
     const resAutocompleteMock = vi.fn((val: unknown) => val)
     const context = {
       interaction: {
+        guild_id: 'guild-123',
         member: {
           roles,
         },
+      },
+      env: {
+        DISCORD_TEST_GUILD_ID: 'guild-123',
       },
       focused: {
         value: query,
       },
       resAutocomplete: resAutocompleteMock,
+      rest: vi.fn(async () => ({
+        ok: true,
+        json: async () => allRoles,
+      })),
     }
     return { context, resAutocompleteMock }
   }
 
-  it('removes color role when color is none and member has a color role', async () => {
+  it('autocompletes only colored non-color-prefix roles the user holds', async () => {
+    const { context, resAutocompleteMock } = createMockAutocompleteContext({
+      roles: ['hundo', 'colorless', 'existing-color'],
+    })
+
+    await command_namecolor.autocomplete(context as never)
+
+    expect(resAutocompleteMock).toHaveBeenCalledWith({
+      choices: [
+        { name: 'None', value: 'none' },
+        { name: 'Hundo', value: 'hundo' },
+      ],
+    })
+  })
+
+  it('filters autocomplete choices by query', async () => {
+    const { context, resAutocompleteMock } = createMockAutocompleteContext({
+      roles: ['hundo', 'shundo'],
+      query: 'shun',
+    })
+
+    await command_namecolor.autocomplete(context as never)
+
+    expect(resAutocompleteMock).toHaveBeenCalledWith({
+      choices: [{ name: 'Shundo', value: 'shundo' }],
+    })
+  })
+
+  it('creates, positions, and assigns a new name color role', async () => {
     const { context, restCalls, resMock } = createMockContext({
-      color: 'none',
-      roles: ['1547480496123027506'],
+      color: 'shundo',
+      roles: ['shundo'],
     })
 
     await command_namecolor.handler(context as never)
 
-    expect(restCalls).toEqual([
-      {
-        method: 'DELETE',
-        path: '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
-        vars: ['guild-123', 'user-123', '1547480496123027506'],
-      },
-    ])
+    const postCall = restCalls.find(
+      (c) => c.method === 'POST' && c.path === '/guilds/{guild.id}/roles',
+    )
+    expect(postCall).toBeDefined()
+    expect((postCall?.data as Record<string, unknown>)?.name).toBe(
+      '[Color] #FFFF00',
+    )
+
+    const patchCall = restCalls.find(
+      (c) => c.method === 'PATCH' && c.path === '/guilds/{guild.id}/roles',
+    )
+    expect(patchCall).toBeDefined()
+    expect((patchCall?.data as { position?: number }[])?.[0]?.position).toBe(49)
+
+    const putCall = restCalls.find(
+      (c) =>
+        c.method === 'PUT' &&
+        c.path === '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
+    )
+    expect(putCall).toBeDefined()
+    expect(resMock).toHaveBeenCalledWith('Set your name color to Shundo.')
+  })
+
+  it('reuses existing role with the same color', async () => {
+    const { context, restCalls, resMock } = createMockContext({
+      color: 'hundo',
+      roles: ['hundo'],
+    })
+
+    await command_namecolor.handler(context as never)
+
+    const postCall = restCalls.find(
+      (c) => c.method === 'POST' && c.path === '/guilds/{guild.id}/roles',
+    )
+    expect(postCall).toBeUndefined()
+
+    const putCall = restCalls.find(
+      (c) =>
+        c.method === 'PUT' &&
+        c.path === '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
+    )
+    expect(putCall?.vars[2]).toBe('existing-color')
+    expect(resMock).toHaveBeenCalledWith('Set your name color to Hundo.')
+  })
+
+  it('removes previous color role when switching and deletes if unused', async () => {
+    const { context, restCalls, resMock } = createMockContext({
+      color: 'shundo',
+      roles: ['shundo', 'existing-color'],
+      members: [{ user: { id: 'user-123' }, roles: ['existing-color'] }],
+    })
+
+    await command_namecolor.handler(context as never)
+
+    const deleteFromUser = restCalls.find(
+      (c) =>
+        c.method === 'DELETE' &&
+        c.path === '/guilds/{guild.id}/members/{user.id}/roles/{role.id}' &&
+        c.vars[2] === 'existing-color',
+    )
+    expect(deleteFromUser).toBeDefined()
+
+    const deleteFromGuild = restCalls.find(
+      (c) =>
+        c.method === 'DELETE' &&
+        c.path === '/guilds/{guild.id}/roles/{role.id}' &&
+        c.vars[1] === 'existing-color',
+    )
+    expect(deleteFromGuild).toBeDefined()
+
+    expect(resMock).toHaveBeenCalledWith('Set your name color to Shundo.')
+  })
+
+  it('does not delete previous color role if another member still has it', async () => {
+    const { context, restCalls, resMock } = createMockContext({
+      color: 'shundo',
+      roles: ['shundo', 'existing-color'],
+      members: [{ user: { id: 'other-user' }, roles: ['existing-color'] }],
+    })
+
+    await command_namecolor.handler(context as never)
+
+    const deleteFromGuild = restCalls.find(
+      (c) =>
+        c.method === 'DELETE' &&
+        c.path === '/guilds/{guild.id}/roles/{role.id}' &&
+        c.vars[1] === 'existing-color',
+    )
+    expect(deleteFromGuild).toBeUndefined()
+    expect(resMock).toHaveBeenCalledWith('Set your name color to Shundo.')
+  })
+
+  it('removes color role when none is selected and deletes if unused', async () => {
+    const { context, restCalls, resMock } = createMockContext({
+      color: 'none',
+      roles: ['existing-color'],
+      members: [],
+    })
+
+    await command_namecolor.handler(context as never)
+
+    const deleteFromUser = restCalls.find(
+      (c) =>
+        c.method === 'DELETE' &&
+        c.path === '/guilds/{guild.id}/members/{user.id}/roles/{role.id}' &&
+        c.vars[2] === 'existing-color',
+    )
+    expect(deleteFromUser).toBeDefined()
+
+    const deleteFromGuild = restCalls.find(
+      (c) =>
+        c.method === 'DELETE' &&
+        c.path === '/guilds/{guild.id}/roles/{role.id}',
+    )
+    expect(deleteFromGuild).toBeDefined()
     expect(resMock).toHaveBeenCalledWith('Removed your name color role.')
   })
 
-  it('notifies when color is none and member has no color role', async () => {
-    const { context, restCalls, resMock } = createMockContext({
+  it('notifies when none is selected but user has no color role', async () => {
+    const { context, resMock } = createMockContext({
       color: 'none',
-      roles: ['other-role'],
+      roles: ['hundo'],
     })
 
     await command_namecolor.handler(context as never)
 
-    expect(restCalls).toHaveLength(0)
     expect(resMock).toHaveBeenCalledWith(
       "You don't have a name color role set.",
     )
   })
 
-  it('denies setting color role if member lacks required achievement role', async () => {
-    const { context, restCalls, resMock } = createMockContext({
-      color: '1547480496123027506',
-      roles: ['unrelated-role'],
-    })
-
-    await command_namecolor.handler(context as never)
-
-    expect(restCalls).toHaveLength(0)
-    expect(resMock).toHaveBeenCalledWith(
-      "You don't have the required achievement role for this name color.",
-    )
-  })
-
-  it('sets color role if member has required achievement role', async () => {
-    const { context, restCalls, resMock } = createMockContext({
-      color: '1547480496123027506',
-      roles: ['1537764340621647872'],
-    })
-
-    await command_namecolor.handler(context as never)
-
-    expect(restCalls).toEqual([
-      {
-        method: 'PUT',
-        path: '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
-        vars: ['guild-123', 'user-123', '1547480496123027506'],
-      },
-    ])
-    expect(resMock).toHaveBeenCalledWith('Set your name color to Shnundo Name.')
-  })
-
-  it('allows Lucky Shundo to set Lucky Name and Shundo Name', async () => {
-    const luckyShundoRoleId = '1537766667432501259'
-
-    const { context: luckyContext, resMock: luckyRes } = createMockContext({
-      color: '1547480746908975165',
-      roles: [luckyShundoRoleId],
-    })
-    await command_namecolor.handler(luckyContext as never)
-    expect(luckyRes).toHaveBeenCalledWith('Set your name color to Shundo Name.')
-
-    const { context: nameContext, resMock: nameRes } = createMockContext({
-      color: '1547479162879610920',
-      roles: [luckyShundoRoleId],
-    })
-    await command_namecolor.handler(nameContext as never)
-    expect(nameRes).toHaveBeenCalledWith('Set your name color to Lucky Name.')
-  })
-
-  it('removes existing color role when switching to a new color role', async () => {
-    const { context, restCalls, resMock } = createMockContext({
-      color: '1547480041292828682',
-      roles: ['1547480496123027506', '1537762918416777267'],
-    })
-
-    await command_namecolor.handler(context as never)
-
-    expect(restCalls).toEqual([
-      {
-        method: 'DELETE',
-        path: '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
-        vars: ['guild-123', 'user-123', '1547480496123027506'],
-      },
-      {
-        method: 'PUT',
-        path: '/guilds/{guild.id}/members/{user.id}/roles/{role.id}',
-        vars: ['guild-123', 'user-123', '1547480041292828682'],
-      },
-    ])
-    expect(resMock).toHaveBeenCalledWith('Set your name color to Hundo Name.')
-  })
-
   it('notifies when user already has the requested color role', async () => {
-    const { context, restCalls, resMock } = createMockContext({
-      color: '1547480041292828682',
-      roles: ['1547480041292828682', '1537762918416777267'],
-    })
-
-    await command_namecolor.handler(context as never)
-
-    expect(restCalls).toHaveLength(0)
-    expect(resMock).toHaveBeenCalledWith(
-      'Your name color is already set to Hundo Name.',
-    )
-  })
-
-  it('supports each color role with any of its valid achievement roles', async () => {
-    for (const [roleId, config] of Object.entries(COLOR_ROLES)) {
-      for (const requiredRole of config.requires) {
-        const { context, resMock } = createMockContext({
-          color: roleId,
-          roles: [requiredRole],
-        })
-
-        await command_namecolor.handler(context as never)
-
-        expect(resMock).toHaveBeenCalledWith(
-          `Set your name color to ${config.name}.`,
-        )
-      }
-    }
-  })
-
-  it('handles REST API error when setting role', async () => {
     const { context, resMock } = createMockContext({
-      color: '1547480496123027506',
-      roles: ['1537764340621647872'],
-      restOk: false,
+      color: 'hundo',
+      roles: ['hundo', 'existing-color'],
     })
 
     await command_namecolor.handler(context as never)
 
-    expect(resMock).toHaveBeenCalledWith('Failed to set name color role.')
-  })
-
-  it('autocompletes only unlocked roles plus None', () => {
-    const luckyShundo = '1537766667432501259'
-    const { context, resAutocompleteMock } = createMockAutocompleteContext({
-      roles: [luckyShundo],
-    })
-
-    command_namecolor.autocomplete(context as never)
-
-    expect(resAutocompleteMock).toHaveBeenCalledWith({
-      choices: [
-        { name: 'None', value: 'none' },
-        { name: 'Shundo Name', value: '1547480746908975165' },
-        { name: 'Hundo Name', value: '1547480041292828682' },
-        { name: 'Shiny Name', value: '1547479551242928158' },
-        { name: 'Lucky Name', value: '1547479162879610920' },
-      ],
-    })
-  })
-
-  it('autocompletes only None when member has no qualifying roles', () => {
-    const { context, resAutocompleteMock } = createMockAutocompleteContext({
-      roles: ['random-role'],
-    })
-
-    command_namecolor.autocomplete(context as never)
-
-    expect(resAutocompleteMock).toHaveBeenCalledWith({
-      choices: [{ name: 'None', value: 'none' }],
-    })
-  })
-
-  it('filters autocomplete choices by query', () => {
-    const luckyShundo = '1537766667432501259'
-    const { context, resAutocompleteMock } = createMockAutocompleteContext({
-      roles: [luckyShundo],
-      query: 'lucky',
-    })
-
-    command_namecolor.autocomplete(context as never)
-
-    expect(resAutocompleteMock).toHaveBeenCalledWith({
-      choices: [{ name: 'Lucky Name', value: '1547479162879610920' }],
-    })
+    expect(resMock).toHaveBeenCalledWith(
+      'Your name color is already set to this color.',
+    )
   })
 })
