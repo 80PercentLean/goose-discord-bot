@@ -16,6 +16,23 @@ export interface DiscordRole {
   }
 }
 
+/**
+ * Role IDs that can never be used as a source for /namecolor.
+ */
+const NAME_COLOR_ROLE_BLACKLIST = new Set<string>([
+  '1355278613175603401', // Community Ambassador
+  '1355282701611171871', // discord-admin
+  '1456810577891557508', // discord-mod
+  '1547079602780766340', // cannot-be-trusted-mod
+  '1519814442915987667', // Community Leader
+  '1456808332735025461', // Team Member
+  '1466894855803502725', // Wild Goose
+  '1466896013796049099', // Cupertino PoGO
+])
+
+const isBlacklistedNameColorRole = (roleId: string): boolean =>
+  NAME_COLOR_ROLE_BLACKLIST.has(roleId)
+
 const roleCache = new Map<string, { roles: DiscordRole[]; expires: number }>()
 
 const toHex = (n: number) => `#${n.toString(16).padStart(6, '0').toUpperCase()}`
@@ -103,6 +120,7 @@ export const command_namecolor = factory.autocomplete(
       (r) =>
         userRoles.includes(r.id) &&
         !r.name.startsWith('[Color] ') &&
+        !isBlacklistedNameColorRole(r.id) &&
         getRoleColors(r).length > 0,
     )
 
@@ -145,6 +163,12 @@ export const command_namecolor = factory.autocomplete(
         await cleanupUnusedRole(c, guildId, role.id, userId)
       }
       return c.flags('EPHEMERAL').res('Removed your name color role.')
+    }
+
+    if (isBlacklistedNameColorRole(selectedRoleId)) {
+      return c
+        .flags('EPHEMERAL')
+        .res('That role cannot be used as a name color.')
     }
 
     const sourceRole = allRoles.find(
