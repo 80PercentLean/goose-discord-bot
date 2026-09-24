@@ -16,6 +16,16 @@ This is actually a permission test command. Goose Bot will only say hi back to y
 
 Your name that Goose Bot will say back to you if it acknowledges you.
 
+# `/namecolor`
+
+This allows you to apply a color from a role you have to your name.
+
+## Options
+
+### `color` \*Required
+
+The role to take the name color from.
+
 # `/schedule list`
 
 **You must be an admin or team member to use this command.**
@@ -193,6 +203,24 @@ This is optional and allows you to attach an existing image to the message throu
 ### `suppress_embeds`
 
 This is optional and when set to true will suppress embeds from being generated.
+
+# `/add_role`
+
+Assign a role to a user or message author and react with role emojis.
+
+## Options
+
+### `role` \*Required
+
+Role to assign.
+
+### `message`
+
+Target message ID or link.
+
+### `user`
+
+Target user to apply role to.
 
 # `/help`
 

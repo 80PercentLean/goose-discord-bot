@@ -101,10 +101,11 @@ const cleanupUnusedRole = async (
 }
 
 export const command_namecolor = factory.autocomplete(
-  new Command('namecolor', 'Set or remove your name color role.').options(
-    new Option('color', 'Role to copy name color from')
-      .autocomplete()
-      .required(),
+  new Command(
+    'namecolor',
+    'Set your name color using the color of one of your roles.',
+  ).options(
+    new Option('color', 'Role to take color from').autocomplete().required(),
   ),
   async (c) => {
     const guildId = c.interaction.guild_id ?? c.env.DISCORD_TEST_GUILD_ID
