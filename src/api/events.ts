@@ -96,6 +96,10 @@ events.get('/', async (c) => {
         ) {
           // Location matches Central Park/Santa Clara
           dataWg.push(d)
+
+          if (d.name.toLowerCase().includes('cupertino')) {
+            dataCupPogo.push(d)
+          }
         } else if (
           location &&
           (location.includes('cupertino') ||
@@ -106,6 +110,10 @@ events.get('/', async (c) => {
         ) {
           // Location matches Memorial Park/De Anza College
           dataCupPogo.push(d)
+
+          if (d.name.toLowerCase().includes('goose')) {
+            dataWg.push(d)
+          }
         } else {
           // Location is unknown, so just store in both
           dataWg.push(d)
