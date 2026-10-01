@@ -79,15 +79,11 @@ events.get('/', async (c) => {
       if (d.entity_metadata?.location) {
         const location = d.entity_metadata?.location?.toLowerCase()
 
-        // if (
-        //   d.name.toLowerCase().includes('go fest 2026 saturday') ||
-        //   d.name.toLowerCase().includes('go fest 2026 sunday')
-        // ) {
-        //   dataWg.push(d)
-        //   dataCupPogo.push(d)
-        // }
-
-        if (
+        if (d.name.toLowerCase().includes('comic con')) {
+          // Store Comic Con meetup in both
+          dataWg.push(d)
+          dataCupPogo.push(d)
+        } else if (
           location &&
           (location.includes('central park') ||
             location.includes('community recreation center') ||
