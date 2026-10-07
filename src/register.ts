@@ -36,8 +36,11 @@ const commands = [
     new Option('message', 'Target message ID or link (optional)'),
     new Option('user', 'Target user to apply role to (optional)', 'User'),
   ),
-  new Command('namecolor', 'Set or remove your name color role.').options(
-    new Option('color', 'Name color role').autocomplete().required(),
+  new Command(
+    'namecolor',
+    'Set your name color using the color of one of your roles.',
+  ).options(
+    new Option('color', 'Role to take color from').autocomplete().required(),
   ),
   new Command(
     'puppet',
