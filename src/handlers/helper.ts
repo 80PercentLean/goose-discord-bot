@@ -1,4 +1,3 @@
-import type { APIApplicationCommandInteraction } from 'discord-api-types/v10'
 import { DateTime } from 'luxon'
 
 import { isAdmin, isTeamMember } from '../util'
@@ -81,9 +80,12 @@ export const parseSendTime = (input: string): DateTime | null => {
  * @param interaction Discord interaction
  * @returns True when the user does have valid permissions, false otherwise
  */
-export const validateUserPermissions = (
-  interaction: APIApplicationCommandInteraction,
-) => {
+export const validateUserPermissions = (interaction: {
+  member?: {
+    permissions?: string
+    roles?: string[]
+  }
+}) => {
   if (
     !isAdmin(interaction.member?.permissions) &&
     !isTeamMember(interaction.member?.roles)

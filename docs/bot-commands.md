@@ -222,6 +222,14 @@ Target message ID or link.
 
 Target user to apply role to.
 
+### `react`
+
+This is optional and defaults to true. When set to true, it will react to the message or the latest image sent by the target user in the channel.
+
+# `Add Role` (Message Apps Command)
+
+Right-click a message and select **Apps > Add Role** to open a form where you can select a role to assign to the author and toggle reacting with role emojis and medal.
+
 # `/help`
 
 This will post a link to this document. You're already here reading it, so you probably don't need to run this command.
