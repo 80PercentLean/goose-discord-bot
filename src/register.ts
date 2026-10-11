@@ -35,7 +35,13 @@ const commands = [
     new Option('role', 'Role to assign').autocomplete().required(),
     new Option('message', 'Target message ID or link (optional)'),
     new Option('user', 'Target user to apply role to (optional)', 'User'),
+    new Option(
+      'react',
+      'React to target or latest image (optional)',
+      'Boolean',
+    ),
   ),
+  new Command('Add Role').type(3),
   new Command(
     'namecolor',
     'Set your name color using the color of one of your roles.',
